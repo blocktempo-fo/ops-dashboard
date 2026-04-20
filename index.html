@@ -303,6 +303,9 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); font
 <div class="header"><div class="header-inner">
   <h1><span style="font-size:26px">🐾</span> 營運任務管理 Dashboard
     <button onclick="resetData()" style="font-size:11px;font-weight:600;font-family:var(--font);background:rgba(107,181,224,0.1);border:1px solid var(--border);border-radius:8px;padding:4px 10px;cursor:pointer;color:var(--text-secondary);margin-left:12px;" title="重置為預設資料">🔄 重置</button>
+    <button onclick="exportData()" style="font-size:11px;font-weight:600;font-family:var(--font);background:rgba(107,201,160,0.1);border:1px solid var(--success);border-radius:8px;padding:4px 10px;cursor:pointer;color:var(--success);margin-left:6px;" title="匯出資料為 JSON 檔案">📤 匯出</button>
+    <button onclick="document.getElementById('import-file').click()" style="font-size:11px;font-weight:600;font-family:var(--font);background:rgba(107,181,224,0.1);border:1px solid var(--accent);border-radius:8px;padding:4px 10px;cursor:pointer;color:var(--accent);margin-left:6px;" title="從 JSON 檔案匯入資料">📥 匯入</button>
+    <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(this)">
   </h1>
   <div class="tabs">
     <button class="tab active" data-tab="tasks" onclick="switchTab('tasks')">📋 任務管理</button>
@@ -536,6 +539,36 @@ function resetData() {
 }
 
 function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+function exportData() {
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'ops-dashboard-backup-' + toDateStr(new Date()) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (!imported.tasks) { alert('檔案格式不正確'); return; }
+      if (!confirm('確定要匯入嗎？將會覆蓋目前所有資料。')) return;
+      data = imported;
+      saveData();
+      renderAll();
+      alert('匯入成功！');
+    } catch(err) { alert('檔案讀取失敗：' + err.message); }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
 
 // ═══════════════════════════════════════
 // Date Helpers
