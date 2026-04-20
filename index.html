@@ -1,0 +1,1769 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>營運任務管理 Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #F5F9FC; --surface: #FFFFFF; --border: #D8E8F0;
+  --text: #2C3E50; --text-secondary: #7A8FA0;
+  --accent: #6BB5E0; --accent-hover: #4A9BD9;
+  --danger: #E07070; --warn: #E8A84C; --success: #6BC9A0;
+  --font: 'Nunito', -apple-system, sans-serif;
+  --shadow: 0 2px 12px rgba(100,150,200,0.08);
+  --shadow-lg: 0 4px 20px rgba(100,150,200,0.12);
+  --radius: 14px;
+}
+
+body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; min-height: 100vh;
+  background-image: radial-gradient(ellipse at 10% 90%, rgba(150,200,240,0.12) 0%, transparent 50%), radial-gradient(ellipse at 90% 10%, rgba(180,220,255,0.15) 0%, transparent 50%); }
+
+.pet-deco { position: fixed; pointer-events: none; z-index: 0; filter: grayscale(20%); }
+.pet-deco.dog { bottom: 20px; left: 30px; font-size: 48px; opacity: 0.18; }
+.pet-deco.cat { bottom: 20px; right: 30px; font-size: 48px; opacity: 0.18; }
+.pet-deco.hamster { top: 100px; right: 60px; font-size: 36px; opacity: 0.13; }
+.pet-deco.paw1 { top: 200px; left: 20px; font-size: 20px; opacity: 0.08; transform: rotate(-20deg); }
+.pet-deco.paw2 { top: 450px; right: 40px; font-size: 18px; opacity: 0.07; transform: rotate(15deg); }
+.pet-deco.paw3 { bottom: 180px; left: 60px; font-size: 16px; opacity: 0.07; transform: rotate(30deg); }
+
+/* Header */
+.header { background: linear-gradient(135deg, #EDF5FB 0%, #D6E8F5 100%); border-bottom: 2px solid var(--border); padding: 0 32px; position: sticky; top: 0; z-index: 100; }
+.header-inner { max-width: 1300px; margin: 0 auto; }
+.header h1 { font-size: 22px; font-weight: 800; padding: 14px 0 0; display: flex; align-items: center; gap: 10px; }
+.tabs { display: flex; gap: 6px; margin-top: 10px; }
+.tab { padding: 8px 20px; font-size: 14px; font-weight: 600; color: var(--text-secondary); background: transparent; border: none; border-radius: 10px 10px 0 0; cursor: pointer; transition: all 0.2s; font-family: var(--font); position: relative; bottom: -2px; }
+.tab:hover { color: var(--text); background: rgba(107,181,224,0.1); }
+.tab.active { color: var(--accent); background: var(--bg); box-shadow: 0 -2px 8px rgba(107,181,224,0.15); border: 2px solid var(--border); border-bottom: 2px solid var(--bg); font-weight: 700; }
+.tab .badge { background: var(--danger); color: #fff; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 10px; margin-left: 6px; }
+
+/* Main */
+.main { max-width: 1300px; margin: 0 auto; padding: 24px 32px 80px; position: relative; z-index: 1; }
+.page { display: none; } .page.active { display: block; }
+
+/* Section Card */
+.section-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 20px; overflow: hidden; }
+.section-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; border-bottom: 1.5px solid var(--border); background: linear-gradient(135deg, rgba(220,238,250,0.4), rgba(200,228,245,0.2)); }
+.section-header h2 { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.section-header .count { background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 8px; }
+
+/* Buttons */
+.btn { font-family: var(--font); font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 10px; border: none; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 4px; }
+.btn-primary { background: var(--accent); color: #fff; box-shadow: 0 2px 8px rgba(107,181,224,0.3); }
+.btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); }
+.btn-ghost { background: transparent; color: var(--text-secondary); }
+.btn-ghost:hover { background: rgba(0,0,0,0.04); }
+
+/* Today Banner */
+.today-banner { background: linear-gradient(135deg, #6BB5E0 0%, #8FC8E8 100%); border-radius: var(--radius); padding: 18px 22px; margin-bottom: 20px; color: #fff; box-shadow: var(--shadow-lg); position: relative; overflow: hidden; }
+.today-banner::after { content: '🐾'; position: absolute; right: 16px; top: 50%; transform: translateY(-50%); font-size: 56px; opacity: 0.12; }
+.today-banner h2 { font-size: 17px; font-weight: 800; margin-bottom: 4px; }
+.today-banner .date-str { font-size: 12px; opacity: 0.9; margin-bottom: 10px; }
+.today-section { margin-bottom: 8px; }
+.today-section:last-child { margin-bottom: 0; }
+.today-section-label { font-size: 11px; font-weight: 700; opacity: 0.85; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+.today-divider { border-top: 1px solid rgba(255,255,255,0.3); margin: 8px 0; }
+.today-tasks-list { display: flex; flex-wrap: wrap; gap: 5px; }
+.today-task-chip { background: rgba(255,255,255,0.22); padding: 3px 10px; border-radius: 7px; font-size: 11px; font-weight: 600; }
+.today-task-chip.overdue { background: rgba(232,93,93,0.35); border: 1px solid rgba(255,255,255,0.35); }
+.today-task-chip.completed { opacity: 0.5; text-decoration: line-through; }
+.today-none { font-size: 12px; opacity: 0.8; font-style: italic; }
+
+/* Task Tables */
+.table-scroll { overflow-x: auto; }
+.freq-drop-zone.drag-over-freq { outline: 2px dashed var(--accent); outline-offset: -2px; background: rgba(107,181,224,0.06); }
+.task-table { width: 100%; border-collapse: collapse; min-width: 1000px; }
+.task-table th { text-align: left; font-size: 10px; font-weight: 700; color: var(--text-secondary); padding: 7px 12px; border-bottom: 1.5px solid var(--border); text-transform: uppercase; letter-spacing: 0.5px; }
+.task-table td { padding: 8px 12px; border-bottom: 1px solid rgba(240,230,218,0.4); font-size: 12px; vertical-align: top; }
+.task-table tr:last-child td { border-bottom: none; }
+.task-table tr:hover td { background: rgba(150,200,240,0.05); }
+
+.col-done { width: 38px; text-align: center; }
+.col-name { min-width: 160px; }
+.col-next { width: 95px; }
+.col-last { width: 100px; }
+.col-owner { width: 70px; }
+.col-note { min-width: 100px; }
+.col-del { width: 32px; text-align: center; }
+
+.done-circle { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--border); background: transparent; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.25s; padding: 0; font-size: 14px; line-height: 1; }
+.done-circle::after { content: '🐾'; opacity: 0.25; font-size: 14px; }
+.done-circle:hover { border-color: var(--accent); background: rgba(107,181,224,0.08); transform: scale(1.15); }
+.done-circle:hover::after { opacity: 0.6; }
+.done-circle.checked { border-color: var(--success); background: rgba(107,201,160,0.15); animation: popIn 0.3s ease; }
+.done-circle.checked::after { content: '🐾'; opacity: 1; filter: none; }
+@keyframes popIn { 0% { transform: scale(0.8); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
+
+.task-name-main { font-weight: 600; font-size: 13px; }
+.task-name-how { font-size: 10px; color: var(--text-secondary); margin-top: 1px; }
+.task-name-link { font-size: 10px; color: var(--accent); text-decoration: none; display: inline-flex; align-items: center; gap: 2px; margin-top: 1px; }
+.task-name-link:hover { text-decoration: underline; }
+
+.freq-badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+.next-today { color: var(--danger); font-weight: 700; } .next-soon { color: var(--warn); font-weight: 700; } .next-normal { color: var(--text-secondary); } .next-overdue { color: var(--danger); font-weight: 700; }
+
+.editable { cursor: text; min-height: 18px; outline: none; border-radius: 5px; padding: 1px 4px; margin: -1px -4px; transition: all 0.15s; }
+.editable:hover { background: rgba(107,181,224,0.06); }
+.editable:focus { background: rgba(107,181,224,0.1); box-shadow: 0 0 0 2px rgba(107,181,224,0.2); }
+
+.freq-select, .dom-input, .date-input { font-family: var(--font); font-size: 12px; border: none; background: transparent; padding: 1px 4px; border-radius: 5px; outline: none; cursor: pointer; }
+.freq-select:hover, .dom-input:hover, .date-input:hover { background: rgba(107,181,224,0.06); }
+.freq-select:focus, .dom-input:focus, .date-input:focus { background: rgba(107,181,224,0.1); box-shadow: 0 0 0 2px rgba(107,181,224,0.2); }
+.dom-input { width: 42px; } .date-input { width: 105px; } .freq-select { width: 100%; -webkit-appearance: none; }
+
+.del-btn { background: none; border: none; cursor: pointer; color: var(--text-secondary); font-size: 15px; padding: 3px; border-radius: 5px; opacity: 0; transition: all 0.15s; }
+.task-table tr:hover .del-btn, .todo-table tr:hover .del-btn { opacity: 1; }
+.del-btn:hover { color: var(--danger); background: rgba(232,93,93,0.1); }
+
+/* Add Form */
+.add-form { display: none; background: var(--surface); border: 2px solid var(--accent); border-radius: var(--radius); padding: 16px; margin-bottom: 14px; box-shadow: 0 4px 16px rgba(107,181,224,0.15); }
+.add-form.open { display: block; animation: slideDown 0.2s ease; }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.form-group label { display: block; font-size: 10px; font-weight: 700; color: var(--text-secondary); margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.3px; }
+.form-group input, .form-group select, .form-group textarea { width: 100%; font-family: var(--font); font-size: 12px; padding: 6px 10px; border: 1.5px solid var(--border); border-radius: 8px; outline: none; background: var(--surface); transition: all 0.2s; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(107,181,224,0.12); }
+.form-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* Todo */
+.todo-table { width: 100%; border-collapse: collapse; }
+.todo-table th { text-align: left; font-size: 10px; font-weight: 700; color: var(--text-secondary); padding: 7px 12px; border-bottom: 1.5px solid var(--border); text-transform: uppercase; letter-spacing: 0.5px; }
+.todo-table td { padding: 8px 12px; border-bottom: 1px solid rgba(240,230,218,0.4); font-size: 12px; vertical-align: top; }
+.todo-table tr:last-child td { border-bottom: none; }
+.todo-table tr:hover td { background: rgba(150,200,240,0.05); }
+.todo-col-check { width: 38px; text-align: center; }
+.todo-col-name { width: auto; }
+.todo-col-note { width: 180px; }
+.todo-col-del { width: 32px; text-align: center; }
+.todo-check { width: 17px; height: 17px; cursor: pointer; accent-color: var(--accent); }
+.todo-row.fading { opacity: 0; transform: translateX(20px); transition: all 0.4s ease; }
+.carried-tag { font-size: 9px; color: var(--danger); font-weight: 700; display: block; margin-top: 1px; }
+
+/* Calendar */
+.cal-header { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 14px; }
+.cal-header h2 { font-size: 20px; font-weight: 800; min-width: 200px; text-align: center; }
+.cal-nav { background: var(--surface); border: 1.5px solid var(--border); border-radius: 10px; padding: 6px 14px; font-size: 13px; cursor: pointer; font-family: var(--font); font-weight: 600; transition: all 0.2s; }
+.cal-nav:hover { background: rgba(107,181,224,0.08); border-color: var(--accent); }
+.cal-today-btn { font-family: var(--font); font-size: 12px; padding: 6px 14px; border: 1.5px solid var(--accent); border-radius: 10px; background: rgba(107,181,224,0.08); cursor: pointer; color: var(--accent); font-weight: 700; transition: all 0.2s; }
+.cal-today-btn:hover { background: var(--accent); color: #fff; }
+
+.cal-grid { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); overflow: hidden; display: grid; grid-template-columns: repeat(7, 1fr); box-shadow: var(--shadow); }
+.cal-dow { padding: 8px; text-align: center; font-size: 11px; font-weight: 700; color: var(--text-secondary); border-bottom: 1.5px solid var(--border); background: linear-gradient(180deg, rgba(220,238,250,0.4), transparent); }
+.cal-cell { min-height: 105px; border-right: 1px solid rgba(240,230,218,0.4); border-bottom: 1px solid rgba(240,230,218,0.4); padding: 3px 5px; position: relative; transition: background 0.15s; }
+.cal-cell:nth-child(7n) { border-right: none; }
+.cal-cell.outside { background: rgba(240,230,218,0.12); }
+.cal-cell.today { background: rgba(107,181,224,0.08); }
+.cal-cell.drag-over { background: rgba(107,181,224,0.15); outline: 2px dashed var(--accent); outline-offset: -2px; }
+.cal-date { font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; }
+.cal-cell.today .cal-date { color: #fff; background: var(--accent); display: inline-block; width: 21px; height: 21px; line-height: 21px; text-align: center; border-radius: 50%; font-weight: 700; }
+
+.cal-task { font-size: 10px; padding: 2px 4px; border-radius: 4px; margin-bottom: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: grab; font-weight: 600; transition: opacity 0.15s; }
+.cal-task:active { cursor: grabbing; opacity: 0.7; }
+.cal-task.is-todo { border-left: 3px solid var(--accent); }
+.cal-task.is-overdue { border-left: 3px solid var(--danger); }
+.cal-task.is-completed { opacity: 0.4; text-decoration: line-through; }
+.cal-more { font-size: 10px; color: var(--text-secondary); padding: 2px 4px; font-weight: 600; }
+
+/* Calendar inline add */
+.cal-add-input { width: 100%; font-family: var(--font); font-size: 10px; border: 1px solid var(--accent); border-radius: 4px; padding: 2px 4px; outline: none; margin-top: 2px; }
+
+/* Calendar day detail popup */
+.cal-day-popup-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.25); z-index: 200; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.15s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.cal-day-popup { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-lg), 0 8px 32px rgba(0,0,0,0.12); min-width: 320px; max-width: 420px; width: 90vw; max-height: 70vh; overflow: hidden; animation: popUp 0.2s ease; }
+@keyframes popUp { from { transform: scale(0.95) translateY(8px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+.cal-day-popup-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: linear-gradient(135deg, #6BB5E0 0%, #8FC8E8 100%); color: #fff; border-radius: var(--radius) var(--radius) 0 0; }
+.cal-day-popup-header h3 { font-size: 15px; font-weight: 800; }
+.cal-day-popup-close { background: rgba(255,255,255,0.25); border: none; color: #fff; font-size: 16px; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: var(--font); font-weight: 700; transition: background 0.15s; }
+.cal-day-popup-close:hover { background: rgba(255,255,255,0.4); }
+.cal-day-popup-body { padding: 12px 16px; overflow-y: auto; max-height: calc(70vh - 56px); }
+.cal-day-popup-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; margin-bottom: 4px; font-size: 12px; font-weight: 600; transition: background 0.1s; }
+.cal-day-popup-item:hover { background: rgba(107,181,224,0.06); }
+.cal-day-popup-item .popup-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.cal-day-popup-item .popup-name { flex: 1; }
+.cal-day-popup-item .popup-tag { font-size: 9px; padding: 1px 6px; border-radius: 5px; font-weight: 700; white-space: nowrap; }
+.cal-day-popup-empty { text-align: center; padding: 20px; color: var(--text-secondary); font-size: 12px; }
+
+/* Progress Report */
+.progress-report { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 20px; overflow: hidden; }
+.progress-report-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; border-bottom: 1.5px solid var(--border); background: linear-gradient(135deg, rgba(107,201,160,0.12), rgba(107,201,160,0.04)); }
+.progress-report-header h3 { font-size: 13px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 6px; }
+.progress-report-body { padding: 14px 18px; }
+.progress-report-text { font-family: var(--font); font-size: 12px; color: var(--text); line-height: 1.8; white-space: pre-wrap; background: rgba(245,249,252,0.6); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+.progress-copy-btn { font-family: var(--font); font-size: 11px; font-weight: 700; padding: 5px 14px; border-radius: 8px; border: 1.5px solid var(--success); background: rgba(107,201,160,0.1); color: var(--success); cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 4px; }
+.progress-copy-btn:hover { background: var(--success); color: #fff; }
+.progress-none { font-size: 12px; color: var(--text-secondary); padding: 8px 0; }
+
+/* Board (任務版) */
+.board-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.board-header h2 { font-size: 18px; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.board-header .count { background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 8px; }
+
+.board-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 14px; overflow: hidden; transition: box-shadow 0.2s; }
+.board-card:hover { box-shadow: var(--shadow-lg); }
+.board-card-header { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid rgba(216,232,240,0.5); background: linear-gradient(135deg, rgba(220,238,250,0.3), rgba(200,228,245,0.15)); }
+.board-card-title { flex: 1; font-size: 14px; font-weight: 700; color: var(--text); }
+.board-card-dates { font-size: 11px; color: var(--text-secondary); white-space: nowrap; }
+.board-status { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+.board-status.active { background: rgba(107,181,224,0.15); color: var(--accent-hover); }
+.board-status.soon { background: rgba(232,168,76,0.15); color: var(--warn); }
+.board-status.overdue { background: rgba(224,112,112,0.15); color: var(--danger); }
+
+.board-card-body { padding: 14px 18px; }
+.board-field { margin-bottom: 10px; }
+.board-field:last-child { margin-bottom: 0; }
+.board-field-label { font-size: 10px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 3px; }
+.board-field-value { font-size: 12px; color: var(--text); line-height: 1.6; min-height: 20px; padding: 4px 8px; border-radius: 6px; border: 1px solid transparent; transition: all 0.15s; }
+.board-field-value[contenteditable="true"]:hover { background: rgba(107,181,224,0.04); border-color: rgba(107,181,224,0.15); }
+.board-field-value[contenteditable="true"]:focus { background: rgba(107,181,224,0.08); border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(107,181,224,0.1); }
+.board-field-value.empty-hint:empty::before { content: attr(data-placeholder); color: var(--text-secondary); opacity: 0.5; font-style: italic; }
+.board-card-footer { display: flex; align-items: center; justify-content: flex-end; padding: 10px 18px; border-top: 1px solid rgba(216,232,240,0.5); }
+
+.board-done-section { margin-top: 20px; }
+.board-done-toggle { display: flex; align-items: center; gap: 8px; padding: 12px 18px; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); cursor: pointer; font-family: var(--font); font-size: 13px; font-weight: 700; color: var(--text-secondary); width: 100%; transition: all 0.2s; }
+.board-done-toggle:hover { background: rgba(107,181,224,0.04); border-color: var(--accent); color: var(--text); }
+.board-done-toggle .arrow { transition: transform 0.2s; font-size: 10px; }
+.board-done-toggle.open .arrow { transform: rotate(90deg); }
+.board-done-cards { display: none; margin-top: 8px; }
+.board-done-cards.open { display: block; }
+.board-card.done-card { opacity: 0.75; }
+.board-card.done-card .board-card-header { background: linear-gradient(135deg, rgba(107,201,160,0.1), rgba(107,201,160,0.05)); }
+.board-result-link a { color: var(--accent); text-decoration: underline; word-break: break-all; }
+
+/* Gantt chart */
+.gantt-scroll { overflow: auto; max-height: 76vh; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); position: relative; }
+.gantt-row { display: flex; min-width: min-content; border-bottom: 1px solid rgba(216,232,240,0.5); }
+.gantt-row:last-child { border-bottom: none; }
+.gantt-row:nth-child(even) .gantt-left { background: rgba(245,249,252,0.7); }
+.gantt-row:nth-child(even) .gantt-track { background-color: rgba(245,249,252,0.4); }
+.gantt-left { position: sticky; left: 0; background: var(--surface); width: 180px; min-width: 180px; z-index: 2; padding: 6px 10px; border-right: 1.5px solid var(--border); }
+.gantt-left-name { font-weight: 700; font-size: 11px; color: var(--text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; }
+.gantt-left-meta { font-size: 10px; color: var(--text-secondary); margin-top: 3px; display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+.gantt-type-tag { display: inline-block; padding: 1px 6px; border-radius: 5px; font-size: 9px; font-weight: 700; }
+.gantt-type-tag.main { background: linear-gradient(135deg, #6BB5E0, #4A9BD9); color: #fff; }
+
+.gantt-track { position: relative; flex-shrink: 0; height: 32px; background-image: linear-gradient(to right, rgba(216,232,240,0.3) 1px, transparent 1px); background-size: 28px 100%; }
+.gantt-track.main-track { height: 56px; }
+
+.gantt-header-row { background: linear-gradient(180deg, #EDF5FB 0%, #D6E8F5 100%); border-bottom: 1.5px solid var(--border); position: sticky; top: 0; z-index: 3; }
+.gantt-header-row .gantt-left { background: linear-gradient(180deg, #EDF5FB 0%, #D6E8F5 100%); z-index: 4; }
+.gantt-header-track { height: 44px; }
+.gantt-month-label { position: absolute; top: 5px; font-size: 11px; font-weight: 800; color: var(--text); text-align: center; pointer-events: none; }
+.gantt-day-tick { position: absolute; bottom: 3px; font-size: 9px; color: var(--text-secondary); text-align: center; font-weight: 600; }
+.gantt-day-tick.is-today { color: #fff; font-weight: 800; }
+.gantt-weekend { position: absolute; top: 0; bottom: 0; background: rgba(240,230,218,0.22); pointer-events: none; }
+
+.gantt-section-row { display: flex; background: linear-gradient(135deg, rgba(220,238,250,0.5), rgba(200,228,245,0.3)); border-bottom: 1.5px solid var(--border); border-top: 2px solid var(--border); margin-top: 6px; }
+.gantt-section-row:first-of-type { margin-top: 0; }
+.gantt-section-header { position: sticky; left: 0; padding: 10px 14px; padding-left: 18px; font-size: 12px; font-weight: 800; color: var(--text); z-index: 2; background: linear-gradient(135deg, #E7F1F8, #D6E8F5); width: 180px; min-width: 180px; border-right: 1.5px solid var(--border); border-left: 4px solid var(--accent); }
+.gantt-sub-header { position: sticky; left: 0; padding: 3px 10px 3px 18px; font-size: 10px; font-weight: 700; color: var(--text-secondary); z-index: 2; background: rgba(237,245,251,0.6); width: 180px; min-width: 180px; border-right: 1.5px solid var(--border); text-transform: uppercase; letter-spacing: 0.3px; }
+
+.gantt-empty { padding: 12px 16px; color: var(--text-secondary); font-size: 11px; font-style: italic; position: sticky; left: 0; width: 180px; min-width: 180px; }
+
+.gantt-today-col { position: absolute; top: 0; bottom: 0; background: rgba(255,180,60,0.12); pointer-events: none; z-index: 1; border-left: 2px solid rgba(232,168,76,0.7); border-right: 2px solid rgba(232,168,76,0.7); }
+.gantt-today-label { position: absolute; top: 2px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: 800; color: var(--warn); background: rgba(255,255,255,0.85); padding: 0 3px; border-radius: 3px; pointer-events: none; white-space: nowrap; }
+
+.gantt-bar { position: absolute; top: 14px; height: 28px; background: linear-gradient(135deg, #6BB5E0, #4A9BD9); border-radius: 8px; padding: 0 10px; display: flex; align-items: center; gap: 6px; color: #fff; font-size: 11px; font-weight: 700; box-shadow: 0 2px 8px rgba(107,181,224,0.35); overflow: hidden; cursor: default; transition: transform 0.15s, box-shadow 0.15s; }
+.gantt-bar:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(107,181,224,0.5); z-index: 2; }
+.gantt-bar.overdue { background: linear-gradient(135deg, #E07070, #C85050); box-shadow: 0 2px 8px rgba(224,112,112,0.35); }
+.gantt-bar.overdue:hover { box-shadow: 0 4px 12px rgba(224,112,112,0.5); }
+.gantt-bar.soon { background: linear-gradient(135deg, #E8A84C, #D4943A); }
+.gantt-bar-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
+.gantt-bar-countdown { font-size: 9px; opacity: 0.9; white-space: nowrap; background: rgba(0,0,0,0.15); padding: 1px 6px; border-radius: 4px; }
+
+.gantt-marker { position: absolute; top: 50%; width: 8px; height: 8px; background: var(--accent); border: 2px solid var(--surface); border-radius: 2px; transform: translate(-50%, -50%) rotate(45deg); box-shadow: 0 1px 3px rgba(0,0,0,0.2); cursor: default; transition: transform 0.15s; z-index: 1; }
+.gantt-marker:hover { transform: translate(-50%, -50%) rotate(45deg) scale(1.5); z-index: 2; }
+.gantt-marker.done { opacity: 0.3; }
+.gantt-marker.weekly { background: #BF360C; }
+.gantt-marker.monthly { background: #2E7D32; }
+.gantt-marker.bimonthly { background: #1565C0; }
+.gantt-marker.quarterly { background: #7B1FA2; }
+.gantt-marker.yearly { background: #00838F; }
+.gantt-marker-line { position: absolute; top: 50%; height: 2px; transform: translateY(-50%); pointer-events: none; opacity: 0.3; }
+
+.gantt-summary-band { position: absolute; top: 10px; height: 24px; border-radius: 6px; background: repeating-linear-gradient(90deg, rgba(255,249,196,0.5) 0px, rgba(255,249,196,0.5) 14px, rgba(255,243,176,0.75) 14px, rgba(255,243,176,0.75) 28px); border: 1px solid rgba(245,127,23,0.25); display: flex; align-items: center; padding: 0 12px; font-size: 10px; font-weight: 600; color: #BF360C; cursor: default; overflow: hidden; }
+
+.gantt-legend { display: flex; gap: 12px; flex-wrap: wrap; padding: 10px 14px; font-size: 11px; color: var(--text-secondary); background: rgba(237,245,251,0.5); border-radius: var(--radius); margin-bottom: 12px; }
+.gantt-legend-item { display: inline-flex; align-items: center; gap: 5px; }
+.gantt-legend-swatch { width: 14px; height: 14px; border-radius: 3px; }
+.gantt-legend-dot { width: 9px; height: 9px; border-radius: 2px; transform: rotate(45deg); border: 1.5px solid var(--surface); box-shadow: 0 0 0 1px var(--border); }
+
+@media (max-width: 900px) { .main { padding: 16px; } .header { padding: 0 16px; } .form-grid { grid-template-columns: 1fr; } }
+::-webkit-scrollbar { width: 6px; height: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="pet-deco dog">🐕</div><div class="pet-deco cat">🐈</div><div class="pet-deco hamster">🐹</div>
+<div class="pet-deco paw1">🐾</div><div class="pet-deco paw2">🐾</div><div class="pet-deco paw3">🐾</div>
+
+<div class="header"><div class="header-inner">
+  <h1><span style="font-size:26px">🐾</span> 營運任務管理 Dashboard
+    <button onclick="resetData()" style="font-size:11px;font-weight:600;font-family:var(--font);background:rgba(107,181,224,0.1);border:1px solid var(--border);border-radius:8px;padding:4px 10px;cursor:pointer;color:var(--text-secondary);margin-left:12px;" title="重置為預設資料">🔄 重置</button>
+  </h1>
+  <div class="tabs">
+    <button class="tab active" data-tab="tasks" onclick="switchTab('tasks')">📋 任務管理</button>
+    <button class="tab" data-tab="calendar" onclick="switchTab('calendar')">📅 月曆</button>
+    <button class="tab" data-tab="gantt" onclick="switchTab('gantt')">📊 甘特圖</button>
+    <button class="tab" data-tab="board" onclick="switchTab('board')">📌 任務版</button>
+  </div>
+</div></div>
+
+<div class="main">
+  <div id="page-tasks" class="page active">
+    <div class="today-banner" id="today-banner">
+      <h2>🌟 今日任務</h2>
+      <div class="date-str" id="today-date-str"></div>
+      <div id="today-content"></div>
+    </div>
+    <div id="progress-report" style="display:none;"></div>
+    <div id="add-form" class="add-form">
+      <div class="form-grid">
+        <div class="form-group"><label>項目名稱 *</label><input type="text" id="f-name" placeholder="任務名稱"></div>
+        <div class="form-group"><label>頻率 *</label><select id="f-freq" onchange="updateFormFields()">
+          <option value="daily">每天</option><option value="every2days">每兩天</option><option value="weekly">每週</option>
+          <option value="monthly" selected>每月</option><option value="bimonthly">隔月</option><option value="quarterly">每季</option><option value="yearly">每年</option>
+        </select></div>
+        <div class="form-group" id="f-dom-group"><label>執行日（幾號）</label><input type="number" id="f-dom" min="1" max="31" placeholder="15"></div>
+        <div class="form-group" id="f-dow-group" style="display:none"><label>固定週幾 *</label><select id="f-dow">
+          <option value="">請選擇</option>
+          <option value="1">週一</option><option value="2">週二</option><option value="3">週三</option>
+          <option value="4">週四</option><option value="5">週五</option><option value="6">週六</option><option value="0">週日</option>
+        </select></div>
+        <div class="form-group"><label>上次整理</label><input type="date" id="f-last"></div>
+        <div class="form-group"><label>負責人</label><input type="text" id="f-owner"></div>
+        <div class="form-group"><label>執行方式</label><input type="text" id="f-how"></div>
+        <div class="form-group"><label>備註</label><input type="text" id="f-note"></div>
+        <div class="form-group"><label>連結</label><input type="url" id="f-link" placeholder="https://..."></div>
+        <div class="form-group"><label>開始日期</label><input type="date" id="f-start"></div>
+      </div>
+      <div class="form-actions"><button class="btn btn-ghost" onclick="toggleAddForm()">取消</button><button class="btn btn-primary" onclick="addTask()">✨ 新增</button></div>
+    </div>
+    <div id="task-sections"></div>
+    <!-- Main Tasks -->
+    <div class="section-card" style="margin-top:8px;"><div class="section-header">
+      <h2>🎯 主要任務 <span class="count" id="main-count">0</span></h2>
+      <button class="btn btn-primary" style="font-size:11px;padding:5px 12px;" onclick="toggleMainForm()">＋ 新增主要任務</button>
+    </div>
+    <div id="main-add-form" style="display:none;padding:12px 16px;border-bottom:1.5px solid var(--border);background:rgba(107,181,224,0.04);">
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="form-group" style="flex:2;min-width:150px;"><label>任務名稱 *</label><input type="text" id="mf-name" placeholder="主要任務名稱"></div>
+        <div class="form-group" style="flex:1;min-width:110px;"><label>開始日期</label><input type="date" id="mf-start" title="何時開始出現在待辦（留空＝立即）"></div>
+        <div class="form-group" style="flex:1;min-width:110px;"><label>截止日期 *</label><input type="date" id="mf-deadline"></div>
+        <div class="form-group" style="flex:1;min-width:120px;"><label>備註</label><input type="text" id="mf-note" placeholder="備註"></div>
+        <div style="display:flex;gap:6px;padding-bottom:1px;">
+          <button class="btn btn-ghost" onclick="toggleMainForm()" style="font-size:11px;">取消</button>
+          <button class="btn btn-primary" onclick="addMainTask()" style="font-size:11px;">✨ 新增</button>
+        </div>
+      </div>
+    </div>
+    <table class="todo-table"><thead><tr>
+      <th class="todo-col-check"></th><th class="todo-col-name">任務</th><th style="width:100px;">開始日期</th><th style="width:100px;">截止日期</th><th style="min-width:160px;">下一步行動</th><th class="todo-col-note">備註</th><th class="todo-col-del"></th>
+    </tr></thead><tbody id="main-tbody"></tbody></table></div>
+
+    <!-- Todos -->
+    <div class="section-card" style="margin-top:8px;"><div class="section-header">
+      <h2>📌 庶務待辦 <span class="count" id="todo-count">0</span></h2>
+      <button class="btn btn-primary" style="font-size:11px;padding:5px 12px;" onclick="addTodo()">＋ 新增待辦</button>
+    </div>
+    <table class="todo-table"><thead><tr>
+      <th class="todo-col-check"></th><th class="todo-col-name">事項</th><th style="width:120px;">排定日期</th><th class="todo-col-note">備註</th><th class="todo-col-del"></th>
+    </tr></thead><tbody id="todo-tbody"></tbody></table></div>
+  </div>
+
+  <div id="page-calendar" class="page">
+    <div class="cal-header">
+      <button class="cal-nav" onclick="calPrev()">‹ 上月</button>
+      <h2 id="cal-title"></h2>
+      <button class="cal-nav" onclick="calNext()">下月 ›</button>
+      <button class="cal-today-btn" onclick="calToday()">📍 今天</button>
+    </div>
+    <div id="cal-grid" class="cal-grid"></div>
+  </div>
+
+  <div id="page-gantt" class="page">
+    <div class="gantt-legend">
+      <div class="gantt-legend-item"><span class="gantt-legend-swatch" style="background:linear-gradient(135deg,#6BB5E0,#4A9BD9)"></span>主線任務</div>
+      <div class="gantt-legend-item"><span class="gantt-legend-dot" style="background:#BF360C"></span>每週</div>
+      <div class="gantt-legend-item"><span class="gantt-legend-dot" style="background:#2E7D32"></span>每月</div>
+      <div class="gantt-legend-item"><span class="gantt-legend-dot" style="background:#1565C0"></span>隔月</div>
+      <div class="gantt-legend-item"><span class="gantt-legend-dot" style="background:#7B1FA2"></span>每季</div>
+      <div class="gantt-legend-item"><span class="gantt-legend-dot" style="background:#00838F"></span>每年</div>
+      <div class="gantt-legend-item"><span class="gantt-legend-swatch" style="background:repeating-linear-gradient(90deg,#FFF9C4 0,#FFF9C4 7px,#FFF3B0 7px,#FFF3B0 14px);border:1px solid rgba(245,127,23,0.35)"></span>高頻庶務</div>
+      <div class="gantt-legend-item"><span style="display:inline-block;width:14px;height:14px;background:rgba(255,180,60,0.15);border:2px solid rgba(232,168,76,0.7);border-radius:2px;"></span>今天</div>
+    </div>
+    <div id="gantt-container"></div>
+  </div>
+
+  <div id="page-board" class="page">
+    <div id="board-container"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// Constants
+// ═══════════════════════════════════════
+const STORAGE_KEY = 'ops-tasks-v3';
+const NOTION_BASE = 'https://www.notion.so/blocktempo/';
+
+const FREQ_LABELS = { daily:'每天', every2days:'每兩天', weekly:'每週', monthly:'每月', bimonthly:'隔月', quarterly:'每季', yearly:'每年' };
+const DOW_LABELS = ['週日','週一','週二','週三','週四','週五','週六'];
+const FREQ_COLORS = {
+  daily:     { bg:'#FFF9C4', text:'#F57F17' },
+  every2days:{ bg:'#FFE0B2', text:'#E65100' },
+  weekly:    { bg:'#FFF3E0', text:'#BF360C' },
+  monthly:   { bg:'#E8F5E9', text:'#2E7D32' },
+  bimonthly: { bg:'#E3F2FD', text:'#1565C0' },
+  quarterly: { bg:'#F3E5F5', text:'#7B1FA2' },
+  yearly:    { bg:'#E0F7FA', text:'#00838F' },
+};
+const FREQ_EMOJI = { daily:'🔄', every2days:'🔃', weekly:'📆', monthly:'🗓️', bimonthly:'🔁', quarterly:'📊', yearly:'🎯' };
+const FREQ_GROUP_ORDER = ['daily','every2days','weekly','monthly','bimonthly','quarterly','yearly'];
+
+function notionLink(path) { return path.startsWith('/') ? NOTION_BASE + path.replace(/^\//, '').split('?')[0] : path; }
+
+const DEFAULT_TASKS = [
+  // Daily
+  { name:'維持辦公空間氛圍', how:'播放公區黑膠機音樂、點精油機或香薰蠟燭', freq:'daily', dom:null, last:'', owner:'', note:'於晚上6點', link:'', start:'2026-01-01' },
+  // Every 2 days
+  { name:'補充庶務備品及福利', how:'檢查零食車與冰箱的零食飲料，評估消耗速度酌量補充。洗手間的衛生紙確保有備用在旁邊，並確認辦公室的酒精充足', freq:'every2days', dom:null, last:'', owner:'', note:'酒精噴灑瓶配置：白色吧台2瓶 編輯室1瓶 會議室1瓶 Joey&Rosie辦公室2瓶', link:'', start:'2026-01-01' },
+  { name:'清空除濕機水箱', how:'下班時倒掉水箱裡的水，如有水跡就請清潔人員清洗', freq:'every2days', dom:null, last:'', owner:'', note:'如見滿水應即時倒掉', link:'', start:'2026-01-01' },
+  { name:'公區辦公室植物澆水', how:'下班時澆水至表面濕潤（需灌滿植物根部），確保室內花盤底部無積水', freq:'every2days', dom:null, last:'', owner:'', note:'', link:'', start:'2026-01-01' },
+  { name:'咖啡機清潔', how:'請清潔人員每天清空回收盒與滴水盤，FO確認移除已使用膠囊，回收盒與滴水盤乾淨無跡', freq:'every2days', dom:null, last:'', owner:'', note:'', link:'', start:'2026-01-01' },
+  // Weekly
+  { name:'檢查投影設備', how:'確認公區與Joey房間投影機投影範圍恰當', freq:'weekly', dom:null, last:'', owner:'', note:'詳見投影機使用方法', link:notionLink('/9b199b917c9d4f8c8ddc633b66bfd0ca'), start:'2026-01-06' },
+  { name:'黑膠機唱針保養', how:'搭配唱針清潔液，將少量清潔液滴在刷子上清理', freq:'weekly', dom:null, last:'', owner:'', note:'待買唱針清潔劑', link:'https://www.tableking.com.tw/collections/vinyl-clean/products/v400501', start:'2026-01-06' },
+  // Monthly 1號
+  { name:'房租代扣繳費', how:'', freq:'monthly', dom:1, last:'', owner:'', note:'每月一號', link:'', start:'2026-01-01' },
+  // Monthly 15號
+  { name:'LG空氣清淨機清洗、飛利浦寵物清淨機、Dyson風扇、HITACHI除濕機清潔', how:'由fo同仁取出濾網轉交清潔人員用水或吸塵器將上面的灰塵清除掉，Dyson風扇擦拭外殼即可。', freq:'monthly', dom:15, last:'', owner:'fo同仁', note:'詳見辦公室家電保養，每年會更換新濾芯', link:notionLink('/208b7e4aa3748077bf90c34ab3104974'), start:'2026-01-01' },
+  { name:'常溫食材期限確認', how:'整理廚房和公區的常溫食材，標記過期日期，與Rosie確認後方可清理過期食品', freq:'monthly', dom:15, last:'', owner:'Rosie', note:'茶包、地瓜', link:'', start:'2026-01-01' },
+  { name:'食品飲料購置', how:'每月月頭盤點後陽台和廚房的存貨，15號購買所需存量', freq:'monthly', dom:15, last:'', owner:'', note:'每月預算＄2,500', link:'', start:'2026-01-01' },
+  { name:'冰箱食材清理', how:'查看冰箱食物及飲料的過期時間，將食用期限將至的食品放於前方，與Rosie確認後方可清理過期食品', freq:'monthly', dom:15, last:'', owner:'Rosie', note:'', link:'', start:'2026-01-01' },
+  { name:'庶務備品購置', how:'檢查後陽台與廚房的備品（如垃圾袋、衛生紙、一次性用品等）充足', freq:'monthly', dom:15, last:'', owner:'', note:'如有需要購買，將於每月15號購置', link:'', start:'2026-01-01' },
+  { name:'Panasonic 烤箱清潔', how:'早上使用烤箱自動清潔功能，再請清潔人員擦拭乾淨', freq:'monthly', dom:15, last:'', owner:'', note:'見辦公室家電保養', link:notionLink('/208b7e4aa3748077bf90c34ab3104974'), start:'2026-01-01' },
+  { name:'清洗貓砂盆', how:'請清潔人員（小榛）於指定假日清洗貓砂盆，於三天前請Rosie準備新貓砂', freq:'monthly', dom:15, last:'', owner:'', note:'補貓砂的數量，貓砂盆清潔劑？', link:'', start:'2026-01-01' },
+  { name:'信用卡交易整理', how:'', freq:'monthly', dom:15, last:'', owner:'', note:'定期整理', link:'', start:'2026-01-01' },
+  { name:'HF餐點憑證', how:'整理餐點憑證明細，含憑證發票編號', freq:'monthly', dom:15, last:'', owner:'', note:'含憑證發票編號', link:'', start:'2026-01-01' },
+  { name:'憑證整理', how:'', freq:'monthly', dom:15, last:'', owner:'', note:'', link:'', start:'2026-01-01' },
+  // Monthly 28號
+  { name:'媒體信箱整理', how:'', freq:'monthly', dom:28, last:'', owner:'', note:'月底處理', link:'', start:'2026-01-01' },
+  { name:'月底印清潔人員簽到單', how:'', freq:'monthly', dom:28, last:'', owner:'', note:'月底', link:'', start:'2026-01-01' },
+  // Bimonthly 7號
+  { name:'零用金帳戶執行管理', how:'', freq:'bimonthly', dom:7, last:'', owner:'', note:'雙數月後隔月七號', link:'', start:'2026-01-01' },
+  { name:'夥伴代墊憑證整理', how:'', freq:'bimonthly', dom:7, last:'', owner:'', note:'底線是單數月七號前，告知R整理好', link:'', start:'2026-01-01' },
+  // Quarterly 25號
+  { name:'檢查醫藥箱', how:'每季的當月25號，確保內用、外用醫藥用品品項齊全，處理過期藥品並添購', freq:'quarterly', dom:25, last:'2026-02-02', owner:'', note:'常備藥品', link:'https://docs.google.com/document/d/1HUEYT7eXk6eWz7-VZ3aCup8Iusq_OLBroOsgr9w0qEo/edit', start:'2026-01-01' },
+  { name:'公司周邊整理補充', how:'每季的當月25號，補充高木櫃的周邊（雨傘、毛巾、L型夾、卡套、貼紙），計算剩餘和使用的周邊數目', freq:'quarterly', dom:25, last:'2026-03-25', owner:'', note:'數量見辦公室儲物', link:notionLink('/208b7e4aa3748002861ec98a66a0f3f7'), start:'2026-01-01' },
+  { name:'公關品盤點整理', how:'每季的當月25號，盤點並評估庫存的公關品，覆核公關品表單紀錄正確。如有超出時效性或過舊不適合繼續行銷整理出來後，與行銷同仁確認後，再請Rosie判斷是否需要處理', freq:'quarterly', dom:25, last:'2026-03-25', owner:'', note:'現存公關品表單', link:'https://docs.google.com/spreadsheets/d/1d4d1GPzfsDwiWYaVS2WJ9YUMWxD0tsUm9wWR7WDYdfQ/edit', start:'2026-01-01' },
+  { name:'藍途 SW請款報告', how:'', freq:'quarterly', dom:15, last:'', owner:'', note:'應付Account', link:'', start:'2026-01-01' },
+  // Yearly
+  { name:'LG空氣清淨機、飛利浦寵物清淨機、Dyson風扇、HITACHI除濕機濾網濾芯更換', how:'於15號購入並換上濾網', freq:'yearly', dom:null, last:'2025-11-06', owner:'', note:'詳見辦公室家電保養', link:notionLink('/208b7e4aa3748077bf90c34ab3104974'), start:'2025-11-06' },
+];
+
+// ═══════════════════════════════════════
+// Data Layer
+// ═══════════════════════════════════════
+let data;
+
+function loadData() {
+  // Try v3
+  let raw = localStorage.getItem(STORAGE_KEY);
+  if (raw) {
+    try {
+      data = JSON.parse(raw);
+      if (!data.overrides) data.overrides = {};
+      if (!data.completions) data.completions = {};
+      if (!data.mainTasks) data.mainTasks = [];
+      if (!data.nextMid) data.nextMid = 1;
+      // Auto-supplement missing default tasks
+      supplementDefaults();
+      return;
+    } catch(e) {}
+  }
+  // Try migrate v2
+  raw = localStorage.getItem('ops-tasks-v2');
+  if (raw) {
+    try {
+      data = JSON.parse(raw);
+      data.overrides = {}; data.completions = {};
+      data.mainTasks = []; data.nextMid = 1;
+      data.todos.forEach(t => { if (!t.dueDate) t.dueDate = t.createdDate || toDateStr(new Date()); });
+      supplementDefaults();
+      saveData(); return;
+    } catch(e) {}
+  }
+  // Fresh
+  data = { tasks: [], todos: [], mainTasks: [], overrides: {}, completions: {}, nextId: 1, nextTid: 1, nextMid: 1 };
+  DEFAULT_TASKS.forEach(t => data.tasks.push({ id: data.nextId++, ...t }));
+  saveData();
+}
+
+function supplementDefaults() {
+  let changed = false;
+  // Add missing tasks AND fill in empty fields on existing tasks
+  DEFAULT_TASKS.forEach(dt => {
+    const match = data.tasks.find(t => t.name === dt.name && t.freq === dt.freq);
+    if (!match) {
+      // Task missing entirely — add it
+      data.tasks.push({ id: data.nextId++, ...dt });
+      changed = true;
+    } else {
+      // Task exists — fill in any blank fields from default
+      ['how','note','link','owner','dom','start'].forEach(field => {
+        if (!match[field] && dt[field]) {
+          match[field] = dt[field];
+          changed = true;
+        }
+      });
+    }
+  });
+  if (changed) saveData();
+}
+
+function resetData() {
+  if (!confirm('確定要重置為預設資料嗎？你新增的庶務待辦和主要任務會保留，但例行任務會回到預設值。')) return;
+  const savedTodos = data.todos || [];
+  const savedMain = data.mainTasks || [];
+  data = { tasks: [], todos: savedTodos, mainTasks: savedMain, overrides: {}, completions: {}, nextId: 1, nextTid: data.nextTid || 1, nextMid: data.nextMid || 1 };
+  DEFAULT_TASKS.forEach(t => data.tasks.push({ id: data.nextId++, ...t }));
+  saveData();
+  renderAll();
+}
+
+function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+// ═══════════════════════════════════════
+// Date Helpers
+// ═══════════════════════════════════════
+function toDateStr(d) { return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function parseDate(s) { if (!s) return null; const p=s.split('-').map(Number); return new Date(p[0],p[1]-1,p[2]); }
+function sameDay(a,b) { return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
+function daysBetween(a,b) { return Math.round((b-a)/86400000); }
+function daysInMonth(y,m) { return new Date(y,m+1,0).getDate(); }
+function formatDateFull(d) { const dow=['日','一','二','三','四','五','六']; return `${d.getFullYear()} 年 ${d.getMonth()+1} 月 ${d.getDate()} 日（${dow[d.getDay()]}）`; }
+function formatDateShort(d) { return `${d.getMonth()+1}/${d.getDate()}`; }
+function esc(s) { if(!s)return''; const e=document.createElement('span'); e.textContent=s; return e.innerHTML; }
+
+// Auto-link URLs in text
+function linkify(s) {
+  if(!s) return '';
+  const escaped = esc(s);
+  return escaped.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;word-break:break-all;">$1</a>');
+}
+
+// ═══════════════════════════════════════
+// Occurrence Engine
+// ═══════════════════════════════════════
+// Effective "from" date: respects last completion — next occurrence must be AFTER last
+function effectiveFrom(task, fromDate) {
+  if(!task.last) return fromDate;
+  const last = parseDate(task.last);
+  if(!last) return fromDate;
+  const dayAfter = new Date(last); dayAfter.setDate(dayAfter.getDate()+1);
+  return dayAfter > fromDate ? dayAfter : fromDate;
+}
+
+function nextOcc(task, fromDate) {
+  const from=fromDate||new Date(), f=task.freq, dom=task.dom||15;
+  if(f==='daily') {
+    const todayD=new Date(from.getFullYear(),from.getMonth(),from.getDate());
+    // If completed today, next is tomorrow
+    if(isCompleted(task.id, toDateStr(todayD)) || (task.last && task.last >= toDateStr(todayD))) {
+      return new Date(todayD.getFullYear(),todayD.getMonth(),todayD.getDate()+1);
+    }
+    return todayD;
+  }
+  if(f==='every2days') {
+    // Prefer last completion + 2 days; fallback to start-based pattern
+    if(task.last) {
+      const last=parseDate(task.last);
+      if(last) {
+        let d=new Date(last); d.setDate(d.getDate()+2);
+        while(d<from) d.setDate(d.getDate()+2);
+        return d;
+      }
+    }
+    const start=parseDate(task.start)||new Date(2026,0,1);
+    const diff=daysBetween(start,from);
+    const rem=((diff%2)+2)%2;
+    let d=rem===0?new Date(from.getFullYear(),from.getMonth(),from.getDate()):new Date(from.getFullYear(),from.getMonth(),from.getDate()+1);
+    if(isCompleted(task.id, toDateStr(d))) d.setDate(d.getDate()+2);
+    return d;
+  }
+  if(f==='weekly') {
+    // Priority 1: fixed day-of-week (dow is set)
+    // next = first date >= max(from, last+1) whose getDay() matches dow
+    const dowSet = (task.dow!==undefined && task.dow!==null && task.dow!=='');
+    if(dowSet) {
+      const targetDow = +task.dow;
+      let searchFrom = new Date(from);
+      if(task.last) {
+        const last = parseDate(task.last);
+        if(last) {
+          const dayAfter = new Date(last); dayAfter.setDate(dayAfter.getDate()+1);
+          if(dayAfter > searchFrom) searchFrom = dayAfter;
+        }
+      }
+      let d = new Date(searchFrom);
+      while(d.getDay() !== targetDow) d.setDate(d.getDate()+1);
+      return d;
+    }
+    // Priority 2: last completion + 7 days
+    if(task.last) {
+      const last = parseDate(task.last);
+      if(last) {
+        let d = new Date(last); d.setDate(d.getDate()+7);
+        while(d<from) d.setDate(d.getDate()+7);
+        return d;
+      }
+    }
+    // Priority 3: start-anchor + 7n (fallback for brand-new task with no last/dow)
+    const start = parseDate(task.start) || from;
+    let d = new Date(start);
+    while(d<from) d.setDate(d.getDate()+7);
+    return d;
+  }
+  if(f==='monthly') {
+    const effFrom = effectiveFrom(task, from);
+    let y=effFrom.getFullYear(),m=effFrom.getMonth();
+    let d=new Date(y,m,Math.min(dom,daysInMonth(y,m)));
+    if(d<effFrom){m++;if(m>11){m=0;y++;}d=new Date(y,m,Math.min(dom,daysInMonth(y,m)));} return d;
+  }
+  if(f==='bimonthly') {
+    const effFrom = effectiveFrom(task, from);
+    let y=effFrom.getFullYear(),m=effFrom.getMonth();
+    for(let i=0;i<14;i++){let cm=(m+i)%12,cy=y+Math.floor((m+i)/12);
+    if(cm%2===0){let d=new Date(cy,cm,Math.min(dom,daysInMonth(cy,cm)));if(d>=effFrom)return d;}} return effFrom;
+  }
+  if(f==='quarterly') {
+    // Every 3 months from last completion (or start date)
+    const anchor = parseDate(task.last) || parseDate(task.start) || new Date(2026,0,1);
+    let y=anchor.getFullYear(), m=anchor.getMonth();
+    // If there's a last date, next is 3 months after last; otherwise use anchor's month
+    if(task.last) { m+=3; if(m>11){m-=12;y++;} }
+    let d=new Date(y,m,Math.min(dom,daysInMonth(y,m)));
+    while(d<from){ m+=3; if(m>11){m-=12;y++;} d=new Date(y,m,Math.min(dom,daysInMonth(y,m))); }
+    return d;
+  }
+  if(f==='yearly') {
+    // Prefer last completion date + 1 year as anchor; fallback to task.start
+    const anchor = parseDate(task.last) || parseDate(task.start) || from;
+    let y = task.last ? anchor.getFullYear()+1 : anchor.getFullYear();
+    const mm = anchor.getMonth(), dd = anchor.getDate();
+    let d = new Date(y, mm, Math.min(dd, daysInMonth(y, mm)));
+    while(d < from) { y++; d = new Date(y, mm, Math.min(dd, daysInMonth(y, mm))); }
+    return d;
+  }
+  return from;
+}
+
+function getOccRange(task, fromDate, toDate) {
+  const R=[], f=task.freq, dom=task.dom||15;
+  if(f==='daily'){let d=new Date(fromDate);while(d<=toDate){R.push(new Date(d));d.setDate(d.getDate()+1);}return R;}
+  if(f==='every2days'){
+    const start=parseDate(task.start)||new Date(2026,0,1);
+    let d=new Date(fromDate);
+    const diff0=daysBetween(start,d); const rem=((diff0%2)+2)%2;
+    if(rem!==0) d.setDate(d.getDate()+1);
+    while(d<=toDate){R.push(new Date(d));d.setDate(d.getDate()+2);} return R;
+  }
+  if(f==='weekly'){
+    if(task.dow!==undefined && task.dow!==null && task.dow!=='') {
+      const targetDow=+task.dow;
+      let d=new Date(fromDate);
+      while(d.getDay()!==targetDow) d.setDate(d.getDate()+1);
+      while(d<=toDate){R.push(new Date(d));d.setDate(d.getDate()+7);}
+      return R;
+    }
+    const start=parseDate(task.start)||fromDate;let d=new Date(start);while(d<fromDate)d.setDate(d.getDate()+7);while(d<=toDate){R.push(new Date(d));d.setDate(d.getDate()+7);}return R;
+  }
+  if(f==='monthly'){let y=fromDate.getFullYear(),m=fromDate.getMonth();for(let i=0;i<14;i++){const d=new Date(y,m,Math.min(dom,daysInMonth(y,m)));if(d>toDate)break;if(d>=fromDate)R.push(d);m++;if(m>11){m=0;y++;}}return R;}
+  if(f==='bimonthly'){let y=fromDate.getFullYear(),m=fromDate.getMonth();for(let i=0;i<14;i++){let cm=(m+i)%12,cy=y+Math.floor((m+i)/12);if(cm%2===0){let d=new Date(cy,cm,Math.min(dom,daysInMonth(cy,cm)));if(d>toDate)break;if(d>=fromDate)R.push(d);}}return R;}
+  if(f==='quarterly'){
+    // Every 3 months from last completion (or start date)
+    const anchor=parseDate(task.last)||parseDate(task.start)||new Date(2026,0,1);
+    let y=anchor.getFullYear(),m=anchor.getMonth();
+    if(task.last){m+=3;if(m>11){m-=12;y++;}}
+    for(let i=0;i<20;i++){
+      const d=new Date(y,m,Math.min(dom,daysInMonth(y,m)));
+      if(d>toDate)break;
+      if(d>=fromDate)R.push(d);
+      m+=3;if(m>11){m-=12;y++;}
+    }
+    return R;
+  }
+  if(f==='yearly'){
+    const anchor=parseDate(task.last)||parseDate(task.start)||fromDate;
+    const startY=task.last?anchor.getFullYear()+1:Math.max(anchor.getFullYear(),fromDate.getFullYear());
+    for(let i=0;i<5;i++){
+      const y=startY+i;
+      const d=new Date(y,anchor.getMonth(),Math.min(anchor.getDate(),daysInMonth(y,anchor.getMonth())));
+      if(d>toDate)break;
+      if(d>=fromDate)R.push(d);
+    }
+    return R;
+  }
+  return R;
+}
+
+// Override-aware occurrences
+function getEffective(task, fromDate, toDate) {
+  const raw = getOccRange(task, fromDate, toDate);
+  const result = [];
+  // Check for overrides that move occurrences away
+  raw.forEach(d => {
+    const key = task.id + '_' + toDateStr(d);
+    if (data.overrides[key]) {
+      // Moved elsewhere — check if moved-to is in range
+      const newD = parseDate(data.overrides[key]);
+      if (newD >= fromDate && newD <= toDate) result.push({ date: newD, overridden: true });
+    } else {
+      result.push({ date: d, overridden: false });
+    }
+  });
+  // Check for overrides that move occurrences INTO this range from outside
+  for (const key in data.overrides) {
+    if (!key.startsWith(task.id + '_')) continue;
+    const origStr = key.split('_').slice(1).join('_');
+    const orig = parseDate(origStr);
+    if (orig >= fromDate && orig <= toDate) continue; // already handled above
+    const newD = parseDate(data.overrides[key]);
+    if (newD >= fromDate && newD <= toDate) result.push({ date: newD, overridden: true });
+  }
+  return result;
+}
+
+function isCompleted(taskId, dateStr) { return !!data.completions[taskId + '_' + dateStr]; }
+
+// ═══════════════════════════════════════
+// Today Banner (Main/Side split)
+// ═══════════════════════════════════════
+function renderTodayBanner() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayStr = toDateStr(today);
+  document.getElementById('today-date-str').textContent = formatDateFull(today);
+
+  // ── 主線：只有主要任務 ──
+  const mainLine = [];
+  (data.mainTasks||[]).forEach(t => {
+    if (t.done) return;
+    if (t.startDate && t.startDate > todayStr) return;
+    if (t.deadline) {
+      const dl = parseDate(t.deadline);
+      const overdue = dl < today;
+      mainLine.push({ name: t.name, done: false, overdue, deadline: t.deadline, nextAction: t.nextAction || '' });
+    }
+  });
+
+  // ── 支線：需同步給同事的例行任務（非每天/每兩天）──
+  const sideLine = [];
+  // ── 庶務：每天/每兩天的例行任務 + 庶務待辦 ──
+  const choreLine = [];
+
+  data.tasks.forEach(task => {
+    const effs = getEffective(task, today, today);
+    effs.forEach(e => {
+      const done = isCompleted(task.id, toDateStr(e.date));
+      const item = { name: task.name, done };
+      if (task.freq === 'daily' || task.freq === 'every2days') {
+        choreLine.push(item);
+      } else {
+        sideLine.push(item);
+      }
+    });
+  });
+  // 庶務待辦歸到庶務
+  data.todos.filter(t => !t.done && (!t.dueDate || t.dueDate <= todayStr)).forEach(t => {
+    choreLine.push({ name: t.name || '（未命名待辦）', done: false });
+  });
+
+  let html = '';
+  // 主線（point form）
+  html += '<div class="today-section"><div class="today-section-label">⭐ 主線任務</div>';
+  if (mainLine.length === 0) html += '<div class="today-tasks-list"><span class="today-none">目前沒有主線任務 🐾</span></div>';
+  else {
+    html += '<div style="margin-top:4px;">';
+    mainLine.forEach(t => {
+      const dlLabel = t.deadline ? formatDateShort(parseDate(t.deadline)) : '';
+      const actionText = t.nextAction ? esc(t.nextAction) : '<span style="opacity:0.5;font-style:italic;">（未設定下一步）</span>';
+      html += `<div style="margin-bottom:5px;${t.overdue?'':''}">
+        <div style="font-size:12px;font-weight:700;">${t.overdue?'⏰ ':'• '}${esc(t.name)}</div>
+        <div style="margin-left:16px;font-size:11px;opacity:0.9;">${dlLabel} — ${actionText}</div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+
+  html += '<div class="today-divider"></div>';
+
+  // 支線
+  html += '<div class="today-section"><div class="today-section-label">📋 支線任務</div><div class="today-tasks-list">';
+  if (sideLine.length === 0) html += '<span class="today-none">今天沒有支線任務 🐾</span>';
+  else sideLine.forEach(t => {
+    html += `<div class="today-task-chip ${t.done?'completed':''}">${esc(t.name)}</div>`;
+  });
+  html += '</div></div>';
+
+  html += '<div class="today-divider"></div>';
+
+  // 庶務
+  html += '<div class="today-section"><div class="today-section-label">🧹 庶務</div><div class="today-tasks-list">';
+  if (choreLine.length === 0) html += '<span class="today-none">今天沒有庶務 🐾</span>';
+  else choreLine.forEach(t => {
+    html += `<div class="today-task-chip ${t.done?'completed':''}">${esc(t.name)}</div>`;
+  });
+  html += '</div></div>';
+
+  document.getElementById('today-content').innerHTML = html;
+
+  // Tab badge
+  const total = mainLine.length + sideLine.filter(t=>!t.done).length + choreLine.filter(t=>!t.done).length;
+  const tabBtn = document.querySelector('.tab[data-tab="tasks"]');
+  tabBtn.innerHTML = total > 0 ? `📋 任務管理 <span class="badge">${total}</span>` : '📋 任務管理';
+}
+
+// ═══════════════════════════════════════
+// Task Table (grouped by frequency)
+// ═══════════════════════════════════════
+function renderTable() {
+  const container = document.getElementById('task-sections');
+  const today = new Date(); today.setHours(0,0,0,0);
+  const groups = {};
+  data.tasks.forEach(t => { if(!groups[t.freq])groups[t.freq]=[]; groups[t.freq].push(t); });
+
+  let html = `<div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+    <button class="btn btn-primary" onclick="toggleAddForm()">✨ 新增任務</button></div>`;
+
+  FREQ_GROUP_ORDER.forEach(freq => {
+    const tasks = groups[freq];
+    if (!tasks || !tasks.length) return;
+    tasks.sort((a,b) => nextOcc(a, today) - nextOcc(b, today));
+    const fc = FREQ_COLORS[freq], emoji = FREQ_EMOJI[freq];
+    const needsDom = ['monthly','bimonthly','quarterly'].includes(freq);
+    const needsDow = freq === 'weekly';
+    const dayConfigHeader = needsDom ? '執行日' : (needsDow ? '週幾' : '');
+
+    html += `<div class="section-card freq-drop-zone" data-freq="${freq}"
+      ondragover="taskDragOver(event)" ondragleave="taskDragLeave(event)" ondrop="taskDrop(event,'${freq}')">
+      <div class="section-header">
+      <h2>${emoji} ${FREQ_LABELS[freq]}任務 <span class="count">${tasks.length}</span></h2></div>
+      <div class="table-scroll"><table class="task-table"><thead><tr>
+        <th class="col-done"></th><th style="min-width:140px">項目</th>
+        <th style="min-width:180px">執行方式</th>
+        ${dayConfigHeader?`<th style="width:75px">${dayConfigHeader}</th>`:''}
+        <th class="col-next">下次執行</th><th class="col-last">上次整理</th>
+        <th class="col-owner">負責人</th><th style="min-width:100px">備註</th><th style="width:90px">連結</th><th class="col-del"></th>
+      </tr></thead><tbody>`;
+
+    tasks.forEach(t => {
+      const next = nextOcc(t, today);
+      const diff = daysBetween(today, next);
+      let nc = 'next-normal';
+      if(diff<0)nc='next-overdue';else if(diff===0)nc='next-today';else if(diff<=7)nc='next-soon';
+
+      html += `<tr data-id="${t.id}" draggable="true" ondragstart="taskRowDragStart(event,${t.id})" style="cursor:grab;"><td class="col-done">
+        <button class="done-circle" onclick="markDone(${t.id})" title="標記完成"></button></td>
+        <td>
+          <div class="task-name-main editable" contenteditable="true" onblur="updateField(${t.id},'name',this.textContent)">${esc(t.name)}</div>
+        </td>
+        <td>
+          <div class="editable task-name-how" style="min-height:20px;" contenteditable="true" onfocus="this.innerHTML=esc(this.getAttribute('data-raw')||'')" onblur="this.setAttribute('data-raw',this.textContent);updateField(${t.id},'how',this.textContent);this.innerHTML=linkify(this.textContent)" data-raw="${esc(t.how||'')}">${linkify(t.how||'')}</div>
+        </td>
+        ${needsDom?`<td><input type="number" class="dom-input" value="${t.dom||''}" min="1" max="31" onchange="updateField(${t.id},'dom',+this.value)">號</td>`:''}
+        ${needsDow?`<td><select class="freq-select" style="width:70px" onchange="updateField(${t.id},'dow',this.value===''?null:+this.value)">
+          <option value="" ${(t.dow===undefined||t.dow===null||t.dow==='')?'selected':''}>—</option>
+          ${DOW_LABELS.map((lbl,i)=>`<option value="${i}" ${+t.dow===i?'selected':''}>${lbl}</option>`).join('')}
+        </select></td>`:''}
+        <td class="col-next"><span class="${nc}">${diff===0?'🔴 今天':diff<0?'⏰ 過期':formatDateShort(next)}</span></td>
+        <td class="col-last"><input type="date" class="date-input" value="${t.last||''}" onchange="updateField(${t.id},'last',this.value)"></td>
+        <td class="col-owner"><div class="editable" contenteditable="true" onblur="updateField(${t.id},'owner',this.textContent)">${esc(t.owner||'')}</div></td>
+        <td><div class="editable" contenteditable="true" onfocus="this.innerHTML=esc(this.getAttribute('data-raw')||'')" onblur="this.setAttribute('data-raw',this.textContent);updateField(${t.id},'note',this.textContent);this.innerHTML=linkify(this.textContent)" data-raw="${esc(t.note||'')}">${linkify(t.note||'')}</div></td>
+        <td>${t.link?`<a class="task-name-link" href="${esc(t.link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🔗 連結</a>`:''}
+          <div class="editable" style="font-size:9px;word-break:break-all;color:var(--text-secondary);margin-top:2px;" contenteditable="true" onfocus="this.textContent=this.getAttribute('data-raw')||''" onblur="this.setAttribute('data-raw',this.textContent);updateField(${t.id},'link',this.textContent);this.textContent=this.textContent?'✏️ 編輯連結':'+ 加連結'" data-raw="${esc(t.link||'')}">${t.link?'✏️ 編輯連結':'+ 加連結'}</div></td>
+        <td class="col-del"><button class="del-btn" onclick="deleteTask(${t.id})">&times;</button></td></tr>`;
+    });
+    html += '</tbody></table></div></div>';
+  });
+  container.innerHTML = html;
+}
+
+function updateField(id, field, value) {
+  const t = data.tasks.find(x=>x.id===id); if(!t)return;
+  t[field] = typeof value==='string'?value.trim():value;
+  saveData(); renderAll();
+}
+
+function markDone(id) {
+  const t = data.tasks.find(x=>x.id===id); if(!t)return;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayStr = toDateStr(today);
+  t.last = todayStr;
+  data.completions[id+'_'+todayStr] = true;
+  saveData();
+  const btn = document.querySelector(`tr[data-id="${id}"] .done-circle`);
+  if(btn){btn.classList.add('checked');setTimeout(()=>{btn.classList.remove('checked');renderAll();},600);}
+  else renderAll();
+}
+
+function deleteTask(id) {
+  if(!confirm('確定要刪除這個任務嗎？'))return;
+  data.tasks=data.tasks.filter(t=>t.id!==id); saveData(); renderAll();
+}
+
+// ── Task row drag between frequency groups ──
+function taskRowDragStart(e, taskId) {
+  e.dataTransfer.setData('text/plain', 'task_' + taskId);
+  e.dataTransfer.effectAllowed = 'move';
+}
+
+function taskDragOver(e) {
+  e.preventDefault();
+  const zone = e.currentTarget;
+  zone.classList.add('drag-over-freq');
+}
+
+function taskDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over-freq');
+}
+
+function taskDrop(e, targetFreq) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over-freq');
+  const raw = e.dataTransfer.getData('text/plain');
+  if (!raw || !raw.startsWith('task_')) return;
+  const taskId = +raw.replace('task_', '');
+  const task = data.tasks.find(t => t.id === taskId);
+  if (!task || task.freq === targetFreq) return;
+  // Change frequency
+  task.freq = targetFreq;
+  // Set default dom if moving to a freq that needs it
+  if (['monthly','bimonthly','quarterly'].includes(targetFreq) && !task.dom) {
+    task.dom = 15;
+  }
+  saveData();
+  renderAll();
+}
+
+function toggleAddForm() { document.getElementById('add-form').classList.toggle('open'); updateFormFields(); }
+
+function updateFormFields() {
+  const freq = document.getElementById('f-freq').value;
+  const needsDom = ['monthly','bimonthly','quarterly'].includes(freq);
+  const needsDow = freq === 'weekly';
+  document.getElementById('f-dom-group').style.display = needsDom ? '' : 'none';
+  document.getElementById('f-dow-group').style.display = needsDow ? '' : 'none';
+}
+
+function addTask() {
+  const name = document.getElementById('f-name').value.trim();
+  if(!name){document.getElementById('f-name').focus();return;}
+  const freq = document.getElementById('f-freq').value;
+  const domVal = +document.getElementById('f-dom').value;
+  const dom = domVal || (['monthly','bimonthly','quarterly'].includes(freq)?15:null);
+  const dowRaw = document.getElementById('f-dow').value;
+  if(freq==='weekly' && dowRaw===''){
+    alert('每週任務請選擇固定週幾');
+    document.getElementById('f-dow').focus();
+    return;
+  }
+  const dow = (freq==='weekly' && dowRaw!=='') ? +dowRaw : null;
+  data.tasks.push({ id:data.nextId++, name, how:document.getElementById('f-how').value.trim(),
+    freq, dom, dow, last:document.getElementById('f-last').value||'',
+    owner:document.getElementById('f-owner').value.trim(),
+    note:document.getElementById('f-note').value.trim(),
+    link:document.getElementById('f-link').value.trim(),
+    start:document.getElementById('f-start').value||toDateStr(new Date()) });
+  saveData(); renderAll();
+  ['f-name','f-how','f-owner','f-note','f-link'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-dom').value=''; document.getElementById('f-dow').value=''; document.getElementById('f-last').value=''; document.getElementById('f-start').value='';
+  toggleAddForm();
+}
+
+// ═══════════════════════════════════════
+// Todos
+// ═══════════════════════════════════════
+function carryOverTodos() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayStr = toDateStr(today);
+  data.todos.forEach(t => {
+    if(!t.dueDate) t.dueDate = t.createdDate||todayStr;
+    if(!t.done && t.dueDate < todayStr) {
+      t.dueDate = todayStr;
+    }
+  });
+  data.todos.forEach(t => { delete t.carriedOver; });
+  saveData();
+}
+
+function renderTodos() {
+  const active = data.todos.filter(t=>!t.done);
+  active.sort((a,b) => {
+    if(!a.dueDate && !b.dueDate) return 0;
+    if(!a.dueDate) return -1;
+    if(!b.dueDate) return 1;
+    return a.dueDate < b.dueDate ? -1 : a.dueDate > b.dueDate ? 1 : 0;
+  });
+  document.getElementById('todo-count').textContent = active.length;
+  const tbody = document.getElementById('todo-tbody');
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayStr = toDateStr(today);
+  if(!active.length){ tbody.innerHTML=`<tr><td colspan="5" style="text-align:center;padding:18px;color:var(--text-secondary);font-size:12px;">🐾 目前沒有待辦事項</td></tr>`; return; }
+  tbody.innerHTML = active.map(t=>{
+    const scheduled = t.dueDate && t.dueDate > todayStr;
+    const schedLabel = t.dueDate ? (scheduled ? formatDateShort(parseDate(t.dueDate)) : '今天') : '—';
+    const schedClass = scheduled ? 'next-normal' : 'next-today';
+    return `<tr class="todo-row ${scheduled?'scheduled-future':''}" data-tid="${t.id}" style="${scheduled?'opacity:0.55;':''}">
+      <td class="todo-col-check"><input type="checkbox" class="todo-check" onchange="todoCheck(${t.id})" ${scheduled?'disabled':''}></td>
+      <td class="todo-col-name">
+        <div class="editable" contenteditable="true" onblur="updateTodo(${t.id},'name',this.textContent)">${esc(t.name||'')}</div>
+        ${scheduled?'<span style="font-size:9px;color:var(--accent);font-weight:700;">📅 尚未到期</span>':''}
+      </td>
+      <td><span class="${schedClass}" style="font-size:12px;">${schedLabel}</span>
+        <input type="date" class="date-input" value="${t.dueDate||''}" onchange="updateTodo(${t.id},'dueDate',this.value)" style="width:100px;font-size:10px;"></td>
+      <td class="todo-col-note"><div class="editable" contenteditable="true" onfocus="this.innerHTML=esc(this.getAttribute('data-raw')||'')" onblur="this.setAttribute('data-raw',this.textContent);updateTodo(${t.id},'note',this.textContent);this.innerHTML=linkify(this.textContent)" data-raw="${esc(t.note||'')}">${linkify(t.note||'')}</div></td>
+      <td class="todo-col-del"><button class="del-btn" onclick="deleteTodo(${t.id})" style="opacity:1">&times;</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function addTodo(name, dateStr) {
+  const todayStr = toDateStr(new Date());
+  const due = dateStr || todayStr;
+  data.todos.push({ id:data.nextTid++, name:name||'', note:'', done:false, createdDate:todayStr, dueDate:due });
+  saveData(); renderAll();
+  if(!name){const rows=document.querySelectorAll('#todo-tbody .todo-row');const last=rows[rows.length-1];if(last){const ed=last.querySelector('.editable');if(ed)ed.focus();}}
+}
+
+function updateTodo(id,field,value) {
+  const t=data.todos.find(x=>x.id===id);if(!t)return;t[field]=(value||'').trim();saveData();renderAll();
+}
+
+function todoCheck(id) {
+  const row=document.querySelector(`.todo-row[data-tid="${id}"]`);
+  if(row){setTimeout(()=>{row.classList.add('fading');setTimeout(()=>{data.todos=data.todos.filter(t=>t.id!==id);saveData();renderAll();},400);},1000);}
+}
+
+function deleteTodo(id) { data.todos=data.todos.filter(t=>t.id!==id);saveData();renderAll(); }
+
+// ═══════════════════════════════════════
+// Main Tasks (with deadline)
+// ═══════════════════════════════════════
+function toggleMainForm() { const f=document.getElementById('main-add-form'); f.style.display=f.style.display==='none'?'block':'none'; }
+
+function renderMainTasks() {
+  const active = data.mainTasks.filter(t=>!t.done);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayStr = toDateStr(today);
+  // Sort: started tasks first, then not-started; within each group sort by deadline
+  active.sort((a,b) => {
+    const notStartedA = a.startDate && a.startDate > todayStr ? 1 : 0;
+    const notStartedB = b.startDate && b.startDate > todayStr ? 1 : 0;
+    if(notStartedA !== notStartedB) return notStartedA - notStartedB;
+    if(!a.deadline && !b.deadline) return 0;
+    if(!a.deadline) return -1;
+    if(!b.deadline) return 1;
+    return a.deadline < b.deadline ? -1 : a.deadline > b.deadline ? 1 : 0;
+  });
+  document.getElementById('main-count').textContent = active.length;
+  const tbody = document.getElementById('main-tbody');
+  if(!active.length){ tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:18px;color:var(--text-secondary);font-size:12px;">🐾 目前沒有主要任務</td></tr>`; return; }
+  tbody.innerHTML = active.map(t=>{
+    const dl = parseDate(t.deadline);
+    const st = parseDate(t.startDate);
+    const dlDiff = dl ? daysBetween(today, dl) : 999;
+    const notStarted = t.startDate && t.startDate > todayStr;
+
+    // Deadline display
+    let dlClass = '', dlText = t.deadline ? formatDateShort(dl) : '—';
+    if (dlDiff < 0) { dlClass = 'next-overdue'; dlText = '⏰ ' + dlText; }
+    else if (dlDiff === 0) { dlClass = 'next-today'; dlText = '🔴 今天'; }
+    else if (dlDiff <= 3) { dlClass = 'next-soon'; }
+
+    // Start date display
+    let stText = t.startDate ? formatDateShort(st) : '立即';
+    let stClass = notStarted ? 'next-normal' : 'next-today';
+
+    return `<tr class="todo-row" data-mid="${t.id}" style="${notStarted?'opacity:0.5;':''}">
+      <td class="todo-col-check"><button class="done-circle" onclick="mainDone(${t.id})" title="完成" ${notStarted?'disabled':''}></button></td>
+      <td class="todo-col-name">
+        <div class="editable" contenteditable="true" onblur="updateMain(${t.id},'name',this.textContent)">${esc(t.name||'')}</div>
+        ${notStarted?'<span style="font-size:9px;color:var(--accent);font-weight:700;">📅 尚未開始</span>':''}
+      </td>
+      <td><span class="${stClass}" style="font-size:11px;">${stText}</span>
+        <input type="date" class="date-input" value="${t.startDate||''}" onchange="updateMain(${t.id},'startDate',this.value)" style="width:95px;font-size:10px;"></td>
+      <td><span class="${dlClass}" style="font-size:11px;">${dlText}</span>
+        <input type="date" class="date-input" value="${t.deadline||''}" onchange="updateMain(${t.id},'deadline',this.value)" style="width:95px;font-size:10px;"></td>
+      <td><div class="editable" style="font-size:12px;font-weight:600;color:var(--accent-hover);" contenteditable="true" onfocus="this.innerHTML=esc(this.getAttribute('data-raw')||'')" onblur="this.setAttribute('data-raw',this.textContent);updateMain(${t.id},'nextAction',this.textContent);this.innerHTML=linkify(this.textContent)" data-raw="${esc(t.nextAction||'')}">${linkify(t.nextAction||'')}</div></td>
+      <td class="todo-col-note"><div class="editable" contenteditable="true" onfocus="this.innerHTML=esc(this.getAttribute('data-raw')||'')" onblur="this.setAttribute('data-raw',this.textContent);updateMain(${t.id},'note',this.textContent);this.innerHTML=linkify(this.textContent)" data-raw="${esc(t.note||'')}">${linkify(t.note||'')}</div></td>
+      <td class="todo-col-del"><button class="del-btn" onclick="deleteMain(${t.id})" style="opacity:1">&times;</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function addMainTask() {
+  const name = document.getElementById('mf-name').value.trim();
+  const deadline = document.getElementById('mf-deadline').value;
+  if(!name){document.getElementById('mf-name').focus();return;}
+  if(!deadline){document.getElementById('mf-deadline').focus();return;}
+  const startDate = document.getElementById('mf-start').value || '';
+  data.mainTasks.push({ id:data.nextMid++, name, startDate, deadline, note:document.getElementById('mf-note').value.trim(), done:false, createdDate:toDateStr(new Date()) });
+  saveData(); renderAll();
+  document.getElementById('mf-name').value=''; document.getElementById('mf-start').value=''; document.getElementById('mf-deadline').value=''; document.getElementById('mf-note').value='';
+  toggleMainForm();
+}
+
+function updateMain(id,field,value) {
+  const t=data.mainTasks.find(x=>x.id===id);if(!t)return;t[field]=(value||'').trim();saveData();renderAll();
+}
+
+function mainDone(id) {
+  const t=data.mainTasks.find(x=>x.id===id);if(!t)return;
+  const btn=document.querySelector(`tr[data-mid="${id}"] .done-circle`);
+  if(btn){btn.classList.add('checked');
+    setTimeout(()=>{t.done=true;saveData();renderAll();},800);}
+  else{t.done=true;saveData();renderAll();}
+}
+
+function deleteMain(id) { data.mainTasks=data.mainTasks.filter(t=>t.id!==id);saveData();renderAll(); }
+
+// ═══════════════════════════════════════
+// Calendar
+// ═══════════════════════════════════════
+let calYear, calMonth;
+function initCal() { const n=new Date();calYear=n.getFullYear();calMonth=n.getMonth(); }
+
+let dragData = null;
+
+function renderCalendar() {
+  document.getElementById('cal-title').textContent = `${calYear} 年 ${calMonth+1} 月`;
+  const grid = document.getElementById('cal-grid');
+  const today = new Date(); today.setHours(0,0,0,0);
+  const dow = ['日','一','二','三','四','五','六'];
+  const firstDay = new Date(calYear,calMonth,1).getDay();
+  const dim = daysInMonth(calYear,calMonth);
+  const calStart = new Date(calYear,calMonth,1-firstDay);
+  const totalCells = Math.ceil((firstDay+dim)/7)*7;
+  const calEnd = new Date(calYear,calMonth,1-firstDay+totalCells-1);
+
+  // Build occurrence map
+  const occMap = {};
+  data.tasks.forEach(task => {
+    const effs = getEffective(task, calStart, calEnd);
+    effs.forEach(e => {
+      const key = toDateStr(e.date);
+      if(!occMap[key])occMap[key]=[];
+      const done = isCompleted(task.id, key);
+      occMap[key].push({ id:task.id, name:task.name, freq:task.freq, type:'task', done, origDate:key });
+    });
+  });
+
+  // Add main tasks: show on startDate (or deadline if no start) through deadline
+  (data.mainTasks||[]).forEach(t => {
+    if(t.done || !t.deadline) return;
+    const dl = parseDate(t.deadline);
+    const st = t.startDate ? parseDate(t.startDate) : dl; // default: only on deadline day
+    const showFrom = st < dl ? st : dl;
+    // Show on startDate and deadline in calendar
+    [toDateStr(showFrom), t.deadline].forEach(key => {
+      if(!occMap[key])occMap[key]=[];
+      const isDeadline = key === t.deadline;
+      const overdue = dl < today && isDeadline;
+      // Avoid duplicates if start=deadline
+      if(key === toDateStr(showFrom) && key === t.deadline) {
+        occMap[key].push({ id:'m'+t.id, name:t.name||'（主要任務）', freq:'main', type: overdue?'overdue':'main', done:false });
+      } else {
+        occMap[key].push({ id:'m'+t.id, name:t.name||'（主要任務）', freq:'main', type: isDeadline?(overdue?'overdue':'main'):'main-start', done:false });
+      }
+    });
+  });
+
+  // Add todos
+  const todayStr = toDateStr(today);
+  data.todos.forEach(t => {
+    if(t.done)return;
+    const dateKey = t.dueDate||todayStr;
+    if(!occMap[dateKey])occMap[dateKey]=[];
+    occMap[dateKey].push({ id:'t'+t.id, name:t.name||'（待辦）', freq:'todo', type:'todo', done:false });
+  });
+
+  let html = dow.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+
+  for(let i=0;i<totalCells;i++){
+    const cellDate = new Date(calYear,calMonth,1-firstDay+i);
+    const isOutside = cellDate.getMonth()!==calMonth;
+    const isToday = sameDay(cellDate,today);
+    const key = toDateStr(cellDate);
+    const items = occMap[key]||[];
+    let cls = 'cal-cell';
+    if(isOutside)cls+=' outside'; if(isToday)cls+=' today';
+
+    let itemsHtml = '';
+    const maxShow = 4;
+    items.slice(0,maxShow).forEach(item => {
+      if(item.type==='main'||item.type==='main-start'){
+        const prefix = item.type==='main-start' ? '📅 ' : '⭐ ';
+        const bg = item.type==='main-start' ? '#EFF6FF' : '#DBEAFE';
+        itemsHtml+=`<div class="cal-task" style="background:${bg};color:#1E40AF;border-left:3px solid #3B82F6"
+          title="${esc(item.name)}">${prefix}${esc(item.name)}</div>`;
+      } else if(item.type==='todo'||item.type==='overdue'){
+        itemsHtml+=`<div class="cal-task is-${item.type}" style="background:#FFF3E0;color:#E65100"
+          title="${esc(item.name)}">${item.type==='overdue'?'⏰ ':'📌 '}${esc(item.name)}</div>`;
+      } else {
+        const fc=FREQ_COLORS[item.freq]||FREQ_COLORS.monthly;
+        itemsHtml+=`<div class="cal-task ${item.done?'is-completed':''}" style="background:${fc.bg};color:${fc.text}"
+          draggable="true" ondragstart="calDragStart(event,${item.id},'${item.origDate}')"
+          title="${esc(item.name)}">${esc(item.name)}</div>`;
+      }
+    });
+    if(items.length>maxShow) itemsHtml+=`<div class="cal-more" style="cursor:pointer;color:var(--accent);text-decoration:underline;" onclick="event.stopPropagation();showDayPopup('${key}')">+${items.length-maxShow} 項 ▾</div>`;
+
+    html+=`<div class="${cls}" data-date="${key}"
+      ondragover="calDragOver(event)" ondragleave="calDragLeave(event)" ondrop="calDrop(event,'${key}')"
+      ondblclick="calCellDblClick('${key}')">
+      <div class="cal-date" style="cursor:pointer;" onclick="event.stopPropagation();showDayPopup('${key}')">${cellDate.getDate()}</div>${itemsHtml}</div>`;
+  }
+  grid.innerHTML = html;
+}
+
+// Drag and Drop
+function calDragStart(e, taskId, origDate) {
+  dragData = { taskId, origDate };
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', taskId+'|'+origDate);
+}
+
+function calDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+function calDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+
+function calDrop(e, targetDate) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const raw = e.dataTransfer.getData('text/plain');
+  if(!raw)return;
+  const [taskId, origDate] = raw.split('|');
+  if(origDate === targetDate) return;
+  // Create override
+  data.overrides[taskId+'_'+origDate] = targetDate;
+  saveData();
+  renderCalendar();
+  renderTodayBanner();
+}
+
+// Double-click cell to add todo
+function calCellDblClick(dateStr) {
+  const cell = document.querySelector(`.cal-cell[data-date="${dateStr}"]`);
+  if(!cell)return;
+  // Check if input already exists
+  if(cell.querySelector('.cal-add-input'))return;
+  const input = document.createElement('input');
+  input.className = 'cal-add-input';
+  input.placeholder = '新增待辦...';
+  input.onkeydown = function(e) {
+    if(e.key==='Enter'&&this.value.trim()){
+      addTodo(this.value.trim(), dateStr);
+      this.remove();
+    }
+    if(e.key==='Escape') this.remove();
+  };
+  input.onblur = function() { setTimeout(()=>this.remove(),200); };
+  cell.appendChild(input);
+  input.focus();
+}
+
+function showDayPopup(dateStr) {
+  const d = parseDate(dateStr);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayStr = toDateStr(today);
+  const items = [];
+  const dayStart = new Date(d); dayStart.setHours(0,0,0,0);
+  const dayEnd = new Date(d); dayEnd.setHours(23,59,59,999);
+  data.tasks.forEach(task => {
+    const effs = getEffective(task, dayStart, dayEnd);
+    effs.forEach(e => {
+      const done = isCompleted(task.id, toDateStr(e.date));
+      const fc = FREQ_COLORS[task.freq] || FREQ_COLORS.monthly;
+      items.push({ name: task.name, tag: FREQ_LABELS[task.freq], tagBg: fc.bg, tagColor: fc.text, dotColor: fc.text, done });
+    });
+  });
+  (data.mainTasks||[]).forEach(t => {
+    if(t.done || !t.deadline) return;
+    const dl = parseDate(t.deadline);
+    const st = t.startDate ? parseDate(t.startDate) : dl;
+    const showDates = [toDateStr(st), t.deadline];
+    if(showDates.includes(dateStr)) {
+      const isDeadline = dateStr === t.deadline;
+      const overdue = dl < today && isDeadline;
+      items.push({ name: t.name, tag: isDeadline ? (overdue ? '⏰ 截止' : '截止日') : '開始日', tagBg: overdue ? '#FEE2E2' : '#DBEAFE', tagColor: overdue ? '#DC2626' : '#1E40AF', dotColor: overdue ? '#DC2626' : '#3B82F6', done: false });
+    }
+  });
+  data.todos.forEach(t => {
+    if(t.done) return;
+    const dateKey = t.dueDate || todayStr;
+    if(dateKey === dateStr) {
+      items.push({ name: t.name || '（待辦）', tag: '庶務', tagBg: '#FFF3E0', tagColor: '#E65100', dotColor: '#E65100', done: false });
+    }
+  });
+  const dow = ['日','一','二','三','四','五','六'];
+  const dateLabel = `${d.getFullYear()} 年 ${d.getMonth()+1} 月 ${d.getDate()} 日（${dow[d.getDay()]}）`;
+  let bodyHtml = '';
+  if(items.length === 0) {
+    bodyHtml = '<div class="cal-day-popup-empty">🐾 這天沒有任務</div>';
+  } else {
+    items.forEach(item => {
+      bodyHtml += `<div class="cal-day-popup-item${item.done?' is-completed':''}">
+        <span class="popup-dot" style="background:${item.dotColor}"></span>
+        <span class="popup-name" style="${item.done?'text-decoration:line-through;opacity:0.5;':''}">${esc(item.name)}</span>
+        <span class="popup-tag" style="background:${item.tagBg};color:${item.tagColor}">${item.tag}</span>
+      </div>`;
+    });
+  }
+  const overlay = document.createElement('div');
+  overlay.className = 'cal-day-popup-overlay';
+  overlay.innerHTML = `<div class="cal-day-popup">
+    <div class="cal-day-popup-header"><h3>📋 ${dateLabel}</h3>
+      <button class="cal-day-popup-close" onclick="this.closest('.cal-day-popup-overlay').remove()">&times;</button>
+    </div><div class="cal-day-popup-body">${bodyHtml}</div></div>`;
+  overlay.addEventListener('click', function(e) { if(e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+function calPrev(){calMonth--;if(calMonth<0){calMonth=11;calYear--;}renderCalendar();}
+function calNext(){calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderCalendar();}
+function calToday(){const n=new Date();calYear=n.getFullYear();calMonth=n.getMonth();renderCalendar();}
+
+// ═══════════════════════════════════════
+// Tab / Render
+// ═══════════════════════════════════════
+// ═══════════════════════════════════════
+// Gantt (Hybrid)
+// ═══════════════════════════════════════
+function renderGantt() {
+  const container = document.getElementById('gantt-container');
+  if(!container) return;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const dayW = 28;
+  const LEFT_W = 180;
+
+  // Timeline range: 2 weeks before today to 120 days after, extended by mainTask dates, aligned to weeks
+  let startDate = new Date(today); startDate.setDate(startDate.getDate() - 14);
+  while (startDate.getDay() !== 1) startDate.setDate(startDate.getDate() - 1); // Monday
+  let endDate = new Date(today); endDate.setDate(endDate.getDate() + 120);
+  (data.mainTasks || []).forEach(t => {
+    if (t.deadline) { const dl = parseDate(t.deadline); if (dl && dl > endDate) endDate = new Date(dl); }
+    if (t.startDate) { const st = parseDate(t.startDate); if (st && st < startDate) startDate = new Date(st); }
+  });
+  while (endDate.getDay() !== 0) endDate.setDate(endDate.getDate() + 1); // Sunday
+
+  const totalDays = daysBetween(startDate, endDate) + 1;
+  const timelineW = totalDays * dayW;
+  const dateToX = (d) => daysBetween(startDate, d) * dayW;
+  const todayX = dateToX(today);
+
+  // Build header: weekend bands, month labels, day ticks
+  let weekendBands = '', dayTicks = '', monthLabels = '';
+  let monthStart = 0, monthLabel = `${startDate.getFullYear()}/${startDate.getMonth()+1}`;
+  for (let i = 0; i < totalDays; i++) {
+    const d = new Date(startDate); d.setDate(d.getDate() + i);
+    const x = i * dayW;
+    if (i > 0 && d.getDate() === 1) {
+      const mx = monthStart * dayW, mw = (i - monthStart) * dayW;
+      monthLabels += `<div class="gantt-month-label" style="left:${mx}px;width:${mw}px">${monthLabel}</div>`;
+      monthStart = i; monthLabel = `${d.getFullYear()}/${d.getMonth()+1}`;
+    }
+    if (d.getDay() === 0 || d.getDay() === 6) weekendBands += `<div class="gantt-weekend" style="left:${x}px;width:${dayW}px"></div>`;
+    dayTicks += `<div class="gantt-day-tick${sameDay(d, today) ? ' is-today' : ''}" style="left:${x}px;width:${dayW}px">${d.getDate()}</div>`;
+  }
+  monthLabels += `<div class="gantt-month-label" style="left:${monthStart*dayW}px;width:${(totalDays-monthStart)*dayW}px">${monthLabel}</div>`;
+
+  // Helpers for sections
+  const sectionRow = (label) => `<div class="gantt-section-row" style="min-width:${LEFT_W + timelineW}px"><div class="gantt-section-header">${label}</div></div>`;
+  const todayColHelper = `<div class="gantt-today-col" style="left:${todayX}px;width:${dayW}px"></div>`;
+  const emptyRow = (text) => `<div class="gantt-row" style="min-width:${LEFT_W + timelineW}px"><div class="gantt-empty">${text}</div><div class="gantt-track" style="width:${timelineW}px">${weekendBands}${todayColHelper}</div></div>`;
+
+  let rowsHtml = '';
+  const todayCol = `<div class="gantt-today-col" style="left:${todayX}px;width:${dayW}px"></div>`;
+
+  // ── Section 1: Main tasks (bars with countdown) ──
+  rowsHtml += sectionRow('⭐ 主線任務');
+  const activeMain = (data.mainTasks || []).filter(t => !t.done && t.deadline);
+  activeMain.sort((a,b) => (a.startDate||a.deadline).localeCompare(b.startDate||b.deadline));
+  if (activeMain.length === 0) {
+    rowsHtml += emptyRow('🐾 目前沒有主線任務');
+  } else {
+    activeMain.forEach(t => {
+      const dl = parseDate(t.deadline);
+      const st = t.startDate ? parseDate(t.startDate) : dl;
+      const x1 = Math.max(0, dateToX(st));
+      const x2 = Math.min(timelineW, dateToX(dl) + dayW);
+      const w = Math.max(dayW, x2 - x1);
+      const dlDiff = daysBetween(today, dl);
+      const overdue = dlDiff < 0;
+      const soon = dlDiff >= 0 && dlDiff <= 3;
+      const barCls = overdue ? 'overdue' : (soon ? 'soon' : '');
+      // Countdown label
+      let countdown = '';
+      if (dlDiff < 0) countdown = `⏰ 過期 ${Math.abs(dlDiff)} 天`;
+      else if (dlDiff === 0) countdown = '🔴 今天截止';
+      else if (dlDiff <= 7) countdown = `剩 ${dlDiff} 天`;
+      const tooltip = [t.name, `開始：${t.startDate || '即刻'}`, `截止：${t.deadline}`, countdown, t.nextAction ? `下一步：${t.nextAction}` : '', t.note ? `備註：${t.note}` : ''].filter(Boolean).join('\n');
+      const metaRange = t.startDate ? `${formatDateShort(st)} → ${formatDateShort(dl)}` : `截止 ${formatDateShort(dl)}`;
+      rowsHtml += `<div class="gantt-row">
+        <div class="gantt-left">
+          <div class="gantt-left-name" title="${esc(t.name)}">${esc(t.name)}</div>
+          <div class="gantt-left-meta"><span class="gantt-type-tag main">主線</span><span>${metaRange}</span></div>
+        </div>
+        <div class="gantt-track main-track" style="width:${timelineW}px">
+          ${weekendBands}${todayCol}
+          <div class="gantt-bar ${barCls}" style="left:${x1}px;width:${w}px" title="${esc(tooltip)}">
+            <span class="gantt-bar-label">${esc(t.name)}</span>
+            ${countdown ? `<span class="gantt-bar-countdown">${countdown}</span>` : ''}
+          </div>
+        </div>
+      </div>`;
+    });
+  }
+
+  // ── Section 2: Fixed recurring — grouped by frequency, ◆ markers + connecting lines ──
+  const fixedFreqs = ['weekly','monthly','bimonthly','quarterly','yearly'];
+  const fixedGroups = {};
+  data.tasks.filter(t => fixedFreqs.includes(t.freq)).forEach(t => {
+    if(!fixedGroups[t.freq]) fixedGroups[t.freq] = [];
+    fixedGroups[t.freq].push(t);
+  });
+
+  rowsHtml += sectionRow('📋 固定例行任務');
+  let hasFixed = false;
+  fixedFreqs.forEach(freq => {
+    const tasks = fixedGroups[freq];
+    if(!tasks || !tasks.length) return;
+    hasFixed = true;
+    tasks.sort((a,b) => nextOcc(a, today) - nextOcc(b, today));
+    const fc = FREQ_COLORS[freq];
+    // Sub-header per frequency
+    rowsHtml += `<div class="gantt-row" style="min-width:${LEFT_W + timelineW}px;border-bottom:none;">
+      <div class="gantt-sub-header">${FREQ_EMOJI[freq]} ${FREQ_LABELS[freq]}（${tasks.length}）</div>
+      <div class="gantt-track" style="width:${timelineW}px;height:24px;">${weekendBands}${todayCol}</div></div>`;
+
+    tasks.forEach(task => {
+      const occs = getEffective(task, startDate, endDate);
+      let markers = '';
+      occs.forEach(e => {
+        const x = dateToX(e.date) + dayW/2;
+        if(x < 0 || x > timelineW) return;
+        const done = isCompleted(task.id, toDateStr(e.date));
+        const tooltip = [task.name, `${FREQ_LABELS[task.freq]} · ${toDateStr(e.date)}`, task.owner ? `負責人：${task.owner}` : '', task.note ? `備註：${task.note}` : '', done ? '✅ 已完成' : ''].filter(Boolean).join('\n');
+        markers += `<div class="gantt-marker ${task.freq} ${done ? 'done' : ''}" style="left:${x}px" title="${esc(tooltip)}"></div>`;
+      });
+      rowsHtml += `<div class="gantt-row">
+        <div class="gantt-left">
+          <div class="gantt-left-name" title="${esc(task.name)}">${esc(task.name)}</div>
+          <div class="gantt-left-meta">${task.owner ? `<span>${esc(task.owner)}</span>` : ''}</div>
+        </div>
+        <div class="gantt-track" style="width:${timelineW}px">
+          ${weekendBands}${todayCol}
+          ${markers}
+        </div>
+      </div>`;
+    });
+  });
+  if(!hasFixed) rowsHtml += emptyRow('無');
+
+  // ── Section 3: High-frequency chores — collapsed summary ──
+  const dailyTasks = data.tasks.filter(t => t.freq === 'daily');
+  const every2Tasks = data.tasks.filter(t => t.freq === 'every2days');
+  rowsHtml += sectionRow('🧹 高頻庶務');
+  if(dailyTasks.length === 0 && every2Tasks.length === 0) {
+    rowsHtml += emptyRow('無');
+  } else {
+    // Summary row for daily
+    if(dailyTasks.length > 0) {
+      const names = dailyTasks.map(t => t.name).join('\n');
+      rowsHtml += `<div class="gantt-row">
+        <div class="gantt-left">
+          <div class="gantt-left-name">🔄 每天（${dailyTasks.length} 項）</div>
+          <div class="gantt-left-meta" style="font-size:9px;">${dailyTasks.map(t=>esc(t.name)).join(' · ')}</div>
+        </div>
+        <div class="gantt-track" style="width:${timelineW}px">
+          ${weekendBands}${todayCol}
+          <div class="gantt-summary-band" style="left:0;width:${timelineW}px" title="${esc(names)}">每天 × ${dailyTasks.length}</div>
+        </div>
+      </div>`;
+    }
+    // Summary row for every2days
+    if(every2Tasks.length > 0) {
+      const names = every2Tasks.map(t => t.name).join('\n');
+      rowsHtml += `<div class="gantt-row">
+        <div class="gantt-left">
+          <div class="gantt-left-name">🔃 每兩天（${every2Tasks.length} 項）</div>
+          <div class="gantt-left-meta" style="font-size:9px;">${every2Tasks.map(t=>esc(t.name)).join(' · ')}</div>
+        </div>
+        <div class="gantt-track" style="width:${timelineW}px">
+          ${weekendBands}${todayCol}
+          <div class="gantt-summary-band" style="left:0;width:${timelineW}px;background:repeating-linear-gradient(90deg, rgba(255,224,178,0.4) 0px, rgba(255,224,178,0.4) 28px, rgba(255,204,128,0.6) 28px, rgba(255,204,128,0.6) 56px);border-color:rgba(230,81,0,0.25);color:#E65100;" title="${esc(names)}">每兩天 × ${every2Tasks.length}</div>
+        </div>
+      </div>`;
+    }
+  }
+
+  // Compose
+  const html = `<div class="gantt-scroll" id="gantt-scroll">
+    <div class="gantt-row gantt-header-row">
+      <div class="gantt-left">
+        <div class="gantt-left-name">任務</div>
+        <div class="gantt-left-meta">類型 · 頻率 · 負責人</div>
+      </div>
+      <div class="gantt-track gantt-header-track" style="width:${timelineW}px">
+        ${weekendBands}
+        <div class="gantt-today-col" style="left:${todayX}px;width:${dayW}px"><span class="gantt-today-label">Today</span></div>
+        ${monthLabels}
+        ${dayTicks}
+      </div>
+    </div>
+    ${rowsHtml}
+  </div>`;
+  container.innerHTML = html;
+
+  // Auto-scroll so today is visible
+  const scroll = document.getElementById('gantt-scroll');
+  if (scroll) scroll.scrollLeft = Math.max(0, todayX - 120);
+}
+
+// ═══════════════════════════════════════
+// Progress Report (今日進度報告)
+// ═══════════════════════════════════════
+function renderProgressReport() {
+  const container = document.getElementById('progress-report');
+  if(!container) return;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayStr = toDateStr(today);
+  const dateLabel = formatDateFull(today);
+
+  // Collect tasks with result or resultLink filled in
+  const items = [];
+  (data.mainTasks||[]).forEach(t => {
+    if(!t.result && !t.resultLink && !t.nextAction) return;
+    const dl = t.deadline ? formatDateShort(parseDate(t.deadline)) : '';
+    const isDone = t.done && t.doneDate === todayStr;
+    items.push({ name: t.name, deadline: dl, result: t.result||'', nextAction: t.nextAction||'', done: t.done, doneToday: isDone });
+  });
+
+  if(items.length === 0) {
+    container.style.display = 'none';
+    return;
+  }
+  container.style.display = 'block';
+
+  // Build plain text report for copying
+  let reportLines = [`📋 工作進度報告 — ${dateLabel}`, ''];
+  items.forEach(t => {
+    const status = t.doneToday ? '✅ 已完成' : '🔄 進行中';
+    reportLines.push(`${status}｜${t.name}${t.deadline ? '（截止 '+t.deadline+'）' : ''}`);
+    if(t.result) reportLines.push(`  ${t.result}`);
+    if(!t.done && t.nextAction) reportLines.push(`  ▸ 下一步：${t.nextAction}`);
+    reportLines.push('');
+  });
+  const reportText = reportLines.join('\n').trim();
+
+  // Build visual HTML
+  let bodyHtml = '';
+  items.forEach(t => {
+    const status = t.doneToday ? '<span style="color:var(--success);font-weight:700;">✅ 已完成</span>' : '<span style="color:var(--accent);font-weight:700;">🔄 進行中</span>';
+    bodyHtml += `<div style="margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(216,232,240,0.4);">
+      <div style="font-size:12px;font-weight:700;">${status} ${esc(t.name)} ${t.deadline ? '<span style="font-size:10px;color:var(--text-secondary);">（截止 '+t.deadline+'）</span>' : ''}</div>
+      ${t.result ? '<div style="font-size:11px;margin-left:18px;margin-top:2px;">'+linkify(t.result)+'</div>' : ''}
+      ${(!t.done && t.nextAction) ? '<div style="font-size:11px;margin-left:18px;margin-top:1px;color:var(--accent-hover);">▸ 下一步：'+esc(t.nextAction)+'</div>' : ''}
+    </div>`;
+  });
+
+  container.innerHTML = `<div class="progress-report">
+    <div class="progress-report-header">
+      <h3>📣 今日進度報告</h3>
+      <button class="progress-copy-btn" onclick="copyProgressReport()">📋 一鍵複製</button>
+    </div>
+    <div class="progress-report-body">
+      ${bodyHtml}
+      <textarea id="progress-report-text" style="position:absolute;left:-9999px;">${esc(reportText)}</textarea>
+    </div>
+  </div>`;
+}
+
+function copyProgressReport() {
+  const textarea = document.getElementById('progress-report-text');
+  if(!textarea) return;
+  const text = textarea.value;
+  if(navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(()=>{
+      const btn = document.querySelector('.progress-copy-btn');
+      if(btn){ const orig = btn.innerHTML; btn.innerHTML = '✅ 已複製！'; setTimeout(()=>btn.innerHTML=orig, 1500); }
+    });
+  } else {
+    textarea.style.position='static'; textarea.select();
+    document.execCommand('copy');
+    textarea.style.position='absolute';
+  }
+}
+
+// ═══════════════════════════════════════
+// Board (任務版)
+// ═══════════════════════════════════════
+function renderBoard() {
+  const container = document.getElementById('board-container');
+  if(!container) return;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayStr = toDateStr(today);
+  const active = (data.mainTasks||[]).filter(t=>!t.done);
+  const completed = (data.mainTasks||[]).filter(t=>t.done);
+
+  // Sort active: started first, then by deadline
+  active.sort((a,b) => {
+    const nsA = a.startDate && a.startDate > todayStr ? 1 : 0;
+    const nsB = b.startDate && b.startDate > todayStr ? 1 : 0;
+    if(nsA!==nsB) return nsA - nsB;
+    if(!a.deadline && !b.deadline) return 0;
+    if(!a.deadline) return 1;
+    if(!b.deadline) return -1;
+    return a.deadline.localeCompare(b.deadline);
+  });
+  // Sort completed by doneDate descending (newest first)
+  completed.sort((a,b) => (b.doneDate||'').localeCompare(a.doneDate||''));
+
+  let html = '';
+  html += `<div class="board-header"><h2>📌 任務版 <span class="count">${active.length}</span></h2>
+    <button class="btn btn-primary" onclick="switchTab('tasks');toggleMainForm()">＋ 新增任務</button></div>`;
+
+  if(active.length === 0) {
+    html += `<div style="text-align:center;padding:40px;color:var(--text-secondary);font-size:13px;">🐾 目前沒有進行中的主線任務</div>`;
+  }
+
+  active.forEach(t => {
+    const dl = parseDate(t.deadline);
+    const st = t.startDate ? parseDate(t.startDate) : null;
+    const dlDiff = dl ? daysBetween(today, dl) : 999;
+    const notStarted = t.startDate && t.startDate > todayStr;
+
+    let statusCls = 'active', statusText = '進行中';
+    if(dlDiff < 0) { statusCls = 'overdue'; statusText = '⏰ 過期'; }
+    else if(dlDiff <= 3 && dlDiff >= 0) { statusCls = 'soon'; statusText = '即將到期'; }
+    if(notStarted) { statusCls = 'active'; statusText = '📅 未開始'; }
+
+    const dateRange = (st ? formatDateShort(st) : '即刻') + ' → ' + (dl ? formatDateShort(dl) : '—');
+
+    html += `<div class="board-card" style="${notStarted?'opacity:0.6;':''}">
+      <div class="board-card-header">
+        <button class="done-circle" onclick="boardDone(${t.id})" title="標記完成" ${notStarted?'disabled':''}></button>
+        <div class="board-card-title editable" contenteditable="true" onblur="updateMain(${t.id},'name',this.textContent)">${esc(t.name||'')}</div>
+        <span class="board-status ${statusCls}">${statusText}</span>
+        <span class="board-card-dates">${dateRange}</span>
+      </div>
+      <div class="board-card-body">
+        <div class="board-field">
+          <div class="board-field-label">描述 / 目標</div>
+          <div class="board-field-value empty-hint" contenteditable="true" data-placeholder="點擊輸入任務描述..."
+            onfocus="this.innerHTML=esc(this.getAttribute('data-raw')||'')"
+            onblur="this.setAttribute('data-raw',this.textContent);updateMain(${t.id},'description',this.textContent);this.innerHTML=linkify(this.textContent)"
+            data-raw="${esc(t.description||'')}">${linkify(t.description||'')}</div>
+        </div>
+        <div class="board-field">
+          <div class="board-field-label">下一步行動</div>
+          <div class="board-field-value empty-hint" contenteditable="true" data-placeholder="下一步要做什麼..."
+            style="color:var(--accent-hover);font-weight:600;"
+            onfocus="this.innerHTML=esc(this.getAttribute('data-raw')||'')"
+            onblur="this.setAttribute('data-raw',this.textContent);updateMain(${t.id},'nextAction',this.textContent);this.innerHTML=linkify(this.textContent)"
+            data-raw="${esc(t.nextAction||'')}">${linkify(t.nextAction||'')}</div>
+        </div>
+        <div class="board-field">
+          <div class="board-field-label">備註</div>
+          <div class="board-field-value empty-hint" contenteditable="true" data-placeholder="備註..."
+            onfocus="this.innerHTML=esc(this.getAttribute('data-raw')||'')"
+            onblur="this.setAttribute('data-raw',this.textContent);updateMain(${t.id},'note',this.textContent);this.innerHTML=linkify(this.textContent)"
+            data-raw="${esc(t.note||'')}">${linkify(t.note||'')}</div>
+        </div>
+        <div style="border-top:1px dashed var(--border);margin-top:6px;padding-top:8px;">
+          <div class="board-field">
+            <div class="board-field-label">今日成果 / 進度說明</div>
+            <div class="board-field-value board-result-link empty-hint" contenteditable="true" data-placeholder="寫下今天的進度，可直接貼連結..."
+              style="min-height:36px;"
+              onfocus="this.innerHTML=esc(this.getAttribute('data-raw')||'')"
+              onblur="this.setAttribute('data-raw',this.textContent);updateMain(${t.id},'result',this.textContent);this.innerHTML=linkify(this.textContent)"
+              data-raw="${esc(t.result||'')}">${linkify(t.result||'')}</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  });
+
+  // Done section
+  html += `<div class="board-done-section">
+    <button class="board-done-toggle" onclick="toggleDoneSection(this)">
+      <span class="arrow">▶</span> ✅ 已完成（${completed.length}）
+    </button>
+    <div class="board-done-cards">`;
+
+  if(completed.length === 0) {
+    html += `<div style="text-align:center;padding:20px;color:var(--text-secondary);font-size:12px;">尚無已完成任務</div>`;
+  }
+
+  completed.forEach(t => {
+    const doneDateLabel = t.doneDate ? formatDateShort(parseDate(t.doneDate)) : '—';
+    html += `<div class="board-card done-card">
+      <div class="board-card-header">
+        <span style="font-size:16px;">✅</span>
+        <div class="board-card-title" style="text-decoration:line-through;opacity:0.7;">${esc(t.name||'')}</div>
+        <span class="board-card-dates">完成於 ${doneDateLabel}</span>
+      </div>
+      <div class="board-card-body">
+        ${t.description ? `<div class="board-field"><div class="board-field-label">描述</div><div class="board-field-value">${linkify(t.description)}</div></div>` : ''}
+        <div class="board-field">
+          <div class="board-field-label">成果 / 進度說明</div>
+          <div class="board-field-value board-result-link empty-hint" contenteditable="true" data-placeholder="補填成果說明，可直接貼連結..."
+            style="min-height:36px;"
+            onfocus="this.innerHTML=esc(this.getAttribute('data-raw')||'')"
+            onblur="this.setAttribute('data-raw',this.textContent);updateMain(${t.id},'result',this.textContent);this.innerHTML=linkify(this.textContent)"
+            data-raw="${esc(t.result||'')}">${linkify(t.result||'')}</div>
+        </div>
+      </div>
+    </div>`;
+  });
+
+  html += '</div></div>';
+  container.innerHTML = html;
+}
+
+function boardDone(id) {
+  const t = data.mainTasks.find(x=>x.id===id); if(!t) return;
+  t.done = true;
+  t.doneDate = toDateStr(new Date());
+  saveData();
+  renderAll();
+}
+
+function toggleDoneSection(btn) {
+  btn.classList.toggle('open');
+  const cards = btn.nextElementSibling;
+  cards.classList.toggle('open');
+}
+
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach(el=>el.classList.toggle('active',el.dataset.tab===tab));
+  document.querySelectorAll('.page').forEach(el=>el.classList.toggle('active',el.id==='page-'+tab));
+  if(tab==='calendar')renderCalendar();
+  if(tab==='gantt')renderGantt();
+  if(tab==='board')renderBoard();
+}
+
+function renderAll(){renderTodayBanner();renderProgressReport();renderTable();renderMainTasks();renderTodos();if(document.getElementById('page-calendar').classList.contains('active'))renderCalendar();if(document.getElementById('page-gantt').classList.contains('active'))renderGantt();if(document.getElementById('page-board').classList.contains('active'))renderBoard();}
+
+// Init
+loadData();
+carryOverTodos();
+initCal();
+renderAll();
+</script>
+</body>
+</html>
