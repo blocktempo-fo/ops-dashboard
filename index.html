@@ -1586,10 +1586,11 @@ function renderProgressReport() {
   // Collect tasks with result or resultLink filled in
   const items = [];
   (data.mainTasks||[]).forEach(t => {
-    if(!t.result && !t.resultLink && !t.nextAction) return;
+    // 已完成且不是今天完成的 → 不顯示在進度報告
+    if(t.done && t.doneDate !== todayStr) return;
+    if(!t.result && !t.nextAction) return;
     const dl = t.deadline ? formatDateShort(parseDate(t.deadline)) : '';
-    const isDone = t.done && t.doneDate === todayStr;
-    items.push({ name: t.name, deadline: dl, result: t.result||'', nextAction: t.nextAction||'', done: t.done, doneToday: isDone });
+    items.push({ name: t.name, deadline: dl, result: t.result||'', nextAction: t.nextAction||'', done: t.done });
   });
 
   if(items.length === 0) {
@@ -1601,7 +1602,7 @@ function renderProgressReport() {
   // Build plain text report for copying
   let reportLines = [`📋 工作進度報告 — ${dateLabel}`, ''];
   items.forEach(t => {
-    const status = t.doneToday ? '✅ 已完成' : '🔄 進行中';
+    const status = t.done ? '✅ 已完成' : '🔄 進行中';
     reportLines.push(`${status}｜${t.name}${t.deadline ? '（截止 '+t.deadline+'）' : ''}`);
     if(t.result) reportLines.push(`  ${t.result}`);
     if(!t.done && t.nextAction) reportLines.push(`  ▸ 下一步：${t.nextAction}`);
