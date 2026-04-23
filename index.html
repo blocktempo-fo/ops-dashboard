@@ -373,7 +373,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); font
       <button class="btn btn-primary" style="font-size:11px;padding:5px 12px;" onclick="addTodo()">＋ 新增待辦</button>
     </div>
     <table class="todo-table"><thead><tr>
-      <th class="todo-col-check"></th><th class="todo-col-name">事項</th><th style="width:120px;">排定日期</th><th class="todo-col-note">備註</th><th class="todo-col-del"></th>
+      <th class="todo-col-check"></th><th class="todo-col-name">事項</th><th style="width:120px;">排定日期</th><th style="width:50px;">分類</th><th class="todo-col-note">備註</th><th class="todo-col-del"></th>
     </tr></thead><tbody id="todo-tbody"></tbody></table></div>
   </div>
 
@@ -898,7 +898,7 @@ function renderTable() {
         <th style="min-width:180px">執行方式</th>
         ${dayConfigHeader?`<th style="width:75px">${dayConfigHeader}</th>`:''}
         <th class="col-next">下次執行</th><th class="col-last">上次整理</th>
-        <th class="col-owner">負責人</th><th style="min-width:100px">備註</th><th style="width:90px">連結</th><th class="col-del"></th>
+        <th class="col-owner">負責人</th><th style="width:55px">分類</th><th style="min-width:100px">備註</th><th style="width:90px">連結</th><th class="col-del"></th>
       </tr></thead><tbody>`;
 
     tasks.forEach(t => {
@@ -923,6 +923,10 @@ function renderTable() {
         <td class="col-next"><span class="${nc}">${diff===0?'🔴 今天':diff<0?'⏰ 過期':formatDateShort(next)}</span></td>
         <td class="col-last"><input type="date" class="date-input" value="${t.last||''}" onchange="updateField(${t.id},'last',this.value)"></td>
         <td class="col-owner"><div class="editable" contenteditable="true" onblur="updateField(${t.id},'owner',this.textContent)">${esc(t.owner||'')}</div></td>
+        <td><select class="freq-select" style="width:50px;font-size:10px;" onchange="updateField(${t.id},'cat',this.value)">
+          <option value="office" ${(t.cat||'office')==='office'?'selected':''}>辦</option>
+          <option value="admin" ${t.cat==='admin'?'selected':''}>非</option>
+        </select></td>
         <td><div class="editable" contenteditable="true" onfocus="this.innerHTML=esc(this.getAttribute('data-raw')||'')" onblur="this.setAttribute('data-raw',this.textContent);updateField(${t.id},'note',this.textContent);this.innerHTML=linkify(this.textContent)" data-raw="${esc(t.note||'')}">${linkify(t.note||'')}</div></td>
         <td>${t.link?`<a class="task-name-link" href="${esc(t.link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🔗 連結</a>`:''}
           <div class="editable" style="font-size:9px;word-break:break-all;color:var(--text-secondary);margin-top:2px;" contenteditable="true" onfocus="this.textContent=this.getAttribute('data-raw')||''" onblur="this.setAttribute('data-raw',this.textContent);updateField(${t.id},'link',this.textContent);this.textContent=this.textContent?'✏️ 編輯連結':'+ 加連結'" data-raw="${esc(t.link||'')}">${t.link?'✏️ 編輯連結':'+ 加連結'}</div></td>
@@ -1053,7 +1057,7 @@ function renderTodos() {
   const tbody = document.getElementById('todo-tbody');
   const today = new Date(); today.setHours(0,0,0,0);
   const todayStr = toDateStr(today);
-  if(!active.length){ tbody.innerHTML=`<tr><td colspan="5" style="text-align:center;padding:18px;color:var(--text-secondary);font-size:12px;">🐾 目前沒有待辦事項</td></tr>`; return; }
+  if(!active.length){ tbody.innerHTML=`<tr><td colspan="6" style="text-align:center;padding:18px;color:var(--text-secondary);font-size:12px;">🐾 目前沒有待辦事項</td></tr>`; return; }
   tbody.innerHTML = active.map(t=>{
     const scheduled = t.dueDate && t.dueDate > todayStr;
     const schedLabel = t.dueDate ? (scheduled ? formatDateShort(parseDate(t.dueDate)) : '今天') : '—';
@@ -1066,6 +1070,10 @@ function renderTodos() {
       </td>
       <td><span class="${schedClass}" style="font-size:12px;">${schedLabel}</span>
         <input type="date" class="date-input" value="${t.dueDate||''}" onchange="updateTodo(${t.id},'dueDate',this.value)" style="width:100px;font-size:10px;"></td>
+      <td><select class="freq-select" style="width:50px;font-size:10px;" onchange="updateTodo(${t.id},'cat',this.value)">
+        <option value="office" ${(t.cat||'office')==='office'?'selected':''}>辦</option>
+        <option value="admin" ${t.cat==='admin'?'selected':''}>非</option>
+      </select></td>
       <td class="todo-col-note"><div class="editable" contenteditable="true" onfocus="this.innerHTML=esc(this.getAttribute('data-raw')||'')" onblur="this.setAttribute('data-raw',this.textContent);updateTodo(${t.id},'note',this.textContent);this.innerHTML=linkify(this.textContent)" data-raw="${esc(t.note||'')}">${linkify(t.note||'')}</div></td>
       <td class="todo-col-del"><button class="del-btn" onclick="deleteTodo(${t.id})" style="opacity:1">&times;</button></td>
     </tr>`;
