@@ -364,7 +364,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); font
       </div>
     </div>
     <table class="todo-table"><thead><tr>
-      <th class="todo-col-check"></th><th class="todo-col-name">任務</th><th style="width:100px;">開始日期</th><th style="width:100px;">截止日期</th><th style="min-width:160px;">下一步行動</th><th class="todo-col-note">備註</th><th class="todo-col-del"></th>
+      <th class="todo-col-check"></th><th class="todo-col-name">任務</th><th style="width:100px;">開始日期</th><th style="width:100px;">截止日期</th><th style="width:100px;">日期(R)</th><th style="min-width:160px;">下一步行動</th><th class="todo-col-note">備註</th><th class="todo-col-del"></th>
     </tr></thead><tbody id="main-tbody"></tbody></table></div>
 
     <!-- Todos -->
@@ -787,14 +787,14 @@ function renderTodayBanner() {
     if (t.startDate && t.startDate > todayStr) return;
     // 今天完成的：顯示一天
     if (t.done && t.doneDate === todayStr) {
-      mainLine.push({ name: t.name, done: true, overdue: false, deadline: t.deadline||'', nextAction: t.nextAction||'', result: t.result||'', isR: !!t.isR });
+      mainLine.push({ name: t.name, done: true, overdue: false, deadline: t.deadline||'', deadlineR: t.deadlineR||'', nextAction: t.nextAction||'', result: t.result||'' });
       return;
     }
     if (t.done) return;
     if (t.deadline) {
       const dl = parseDate(t.deadline);
       const overdue = dl < today;
-      mainLine.push({ name: t.name, done: false, overdue, deadline: t.deadline, nextAction: t.nextAction || '', result: t.result||'', isR: !!t.isR });
+      mainLine.push({ name: t.name, done: false, overdue, deadline: t.deadline, deadlineR: t.deadlineR||'', nextAction: t.nextAction || '', result: t.result||'' });
     }
   });
 
@@ -828,7 +828,8 @@ function renderTodayBanner() {
   else {
     html += '<div style="margin-top:4px;">';
     mainLine.forEach(t => {
-      const dlLabel = t.deadline ? formatDateShort(parseDate(t.deadline)) + (t.isR ? '(R)' : '') : '';
+      let dlLabel = t.deadline ? formatDateShort(parseDate(t.deadline)) : '';
+      if(t.deadlineR) dlLabel += (dlLabel ? ' / ' : '') + formatDateShort(parseDate(t.deadlineR)) + '(R)';
       const prefix = t.done ? '[done] ' : (t.overdue ? '[overdue] ' : '- ');
       const actionText = t.nextAction ? esc(t.nextAction) : '<span style="opacity:0.5;font-style:italic;">（未設定下一步）</span>';
       html += `<div style="margin-bottom:5px;${t.done?'opacity:0.7;':''}">
@@ -1120,7 +1121,7 @@ function renderMainTasks() {
   });
   document.getElementById('main-count').textContent = active.length;
   const tbody = document.getElementById('main-tbody');
-  if(!active.length){ tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:18px;color:var(--text-secondary);font-size:12px;">🐾 目前沒有主要任務</td></tr>`; return; }
+  if(!active.length){ tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:18px;color:var(--text-secondary);font-size:12px;">🐾 目前沒有主要任務</td></tr>`; return; }
   tbody.innerHTML = active.map(t=>{
     const dl = parseDate(t.deadline);
     const st = parseDate(t.startDate);
@@ -1128,7 +1129,7 @@ function renderMainTasks() {
     const notStarted = t.startDate && t.startDate > todayStr;
 
     // Deadline display
-    let dlClass = '', dlText = t.deadline ? formatDateShort(dl) + (t.isR ? '(R)' : '') : '—';
+    let dlClass = '', dlText = t.deadline ? formatDateShort(dl) : '—';
     if (dlDiff < 0) { dlClass = 'next-overdue'; dlText = '⏰ ' + dlText; }
     else if (dlDiff === 0) { dlClass = 'next-today'; dlText = '🔴 今天'; }
     else if (dlDiff <= 3) { dlClass = 'next-soon'; }
@@ -1146,8 +1147,9 @@ function renderMainTasks() {
       <td><span class="${stClass}" style="font-size:11px;">${stText}</span>
         <input type="date" class="date-input" value="${t.startDate||''}" onchange="updateMain(${t.id},'startDate',this.value)" style="width:95px;font-size:10px;"></td>
       <td><span class="${dlClass}" style="font-size:11px;">${dlText}</span>
-        <input type="date" class="date-input" value="${t.deadline||''}" onchange="updateMain(${t.id},'deadline',this.value)" style="width:95px;font-size:10px;">
-        <label style="font-size:9px;color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;gap:2px;margin-top:1px;"><input type="checkbox" ${t.isR?'checked':''} onchange="updateMain(${t.id},'isR',this.checked)" style="width:12px;height:12px;accent-color:var(--warn);">(R)</label></td>
+        <input type="date" class="date-input" value="${t.deadline||''}" onchange="updateMain(${t.id},'deadline',this.value)" style="width:95px;font-size:10px;"></td>
+      <td>${t.deadlineR ? '<span style="font-size:11px;color:var(--warn);font-weight:600;">'+formatDateShort(parseDate(t.deadlineR))+'(R)</span>' : ''}
+        <input type="date" class="date-input" value="${t.deadlineR||''}" onchange="updateMain(${t.id},'deadlineR',this.value)" style="width:95px;font-size:10px;"></td>
       <td><div class="editable" style="font-size:12px;font-weight:600;color:var(--accent-hover);" contenteditable="true" onfocus="this.innerHTML=esc(this.getAttribute('data-raw')||'')" onblur="this.setAttribute('data-raw',this.textContent);updateMain(${t.id},'nextAction',this.textContent);this.innerHTML=linkify(this.textContent)" data-raw="${esc(t.nextAction||'')}">${linkify(t.nextAction||'')}</div></td>
       <td class="todo-col-note"><div class="editable" contenteditable="true" onfocus="this.innerHTML=esc(this.getAttribute('data-raw')||'')" onblur="this.setAttribute('data-raw',this.textContent);updateMain(${t.id},'note',this.textContent);this.innerHTML=linkify(this.textContent)" data-raw="${esc(t.note||'')}">${linkify(t.note||'')}</div></td>
       <td class="todo-col-del"><button class="del-btn" onclick="deleteMain(${t.id})" style="opacity:1">&times;</button></td>
@@ -1225,12 +1227,11 @@ function renderCalendar() {
       if(!occMap[key])occMap[key]=[];
       const isDeadline = key === t.deadline;
       const overdue = dl < today && isDeadline;
-      const rTag = t.isR ? '(R)' : '';
       // Avoid duplicates if start=deadline
       if(key === toDateStr(showFrom) && key === t.deadline) {
-        occMap[key].push({ id:'m'+t.id, name:(t.name||'（主要任務）')+rTag, freq:'main', type: overdue?'overdue':'main', done:false });
+        occMap[key].push({ id:'m'+t.id, name:t.name||'（主要任務）', freq:'main', type: overdue?'overdue':'main', done:false });
       } else {
-        occMap[key].push({ id:'m'+t.id, name:(t.name||'（主要任務）')+rTag, freq:'main', type: isDeadline?(overdue?'overdue':'main'):'main-start', done:false });
+        occMap[key].push({ id:'m'+t.id, name:t.name||'（主要任務）', freq:'main', type: isDeadline?(overdue?'overdue':'main'):'main-start', done:false });
       }
     });
   });
@@ -1351,8 +1352,7 @@ function showDayPopup(dateStr) {
     if(showDates.includes(dateStr)) {
       const isDeadline = dateStr === t.deadline;
       const overdue = dl < today && isDeadline;
-      const rTag = t.isR ? '(R)' : '';
-      items.push({ name: t.name + rTag, tag: isDeadline ? (overdue ? '⏰ 截止' : '截止日') : '開始日', tagBg: overdue ? '#FEE2E2' : '#DBEAFE', tagColor: overdue ? '#DC2626' : '#1E40AF', dotColor: overdue ? '#DC2626' : '#3B82F6', done: false });
+      items.push({ name: t.name, tag: isDeadline ? (overdue ? '⏰ 截止' : '截止日') : '開始日', tagBg: overdue ? '#FEE2E2' : '#DBEAFE', tagColor: overdue ? '#DC2626' : '#1E40AF', dotColor: overdue ? '#DC2626' : '#3B82F6', done: false });
     }
   });
   data.todos.forEach(t => {
@@ -1603,7 +1603,8 @@ function renderProgressReport() {
   (data.mainTasks||[]).forEach(t => {
     if(t.done && t.doneDate !== todayStr) return;
     if(!t.result && !t.nextAction && !t.done) return;
-    const dl = t.deadline ? formatDateShort(parseDate(t.deadline)) + (t.isR ? '(R)' : '') : '';
+    let dl = t.deadline ? formatDateShort(parseDate(t.deadline)) : '';
+    if(t.deadlineR) dl += (dl ? ' / ' : '') + formatDateShort(parseDate(t.deadlineR)) + '(R)';
     const item = { name: t.name, deadline: dl, result: t.result||'', nextAction: t.nextAction||'', done: t.done };
     if(t.done) doneItems.push(item); else activeItems.push(item);
   });
