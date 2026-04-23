@@ -798,27 +798,27 @@ function renderTodayBanner() {
     }
   });
 
-  // ── 辦公室 / 非辦公室 / 庶務 ──
+  // ── 所有例行任務 + 庶務待辦，統一按 cat 分辦公室/非辦公室 ──
   const officeLine = [];
   const adminLine = [];
-  const choreLine = [];
 
   data.tasks.forEach(task => {
     const effs = getEffective(task, today, today);
     effs.forEach(e => {
       const done = isCompleted(task.id, toDateStr(e.date));
       const item = { name: task.name, done };
-      if (task.freq === 'daily' || task.freq === 'every2days') {
-        choreLine.push(item);
-      } else if (task.cat === 'admin') {
+      if (task.cat === 'admin') {
         adminLine.push(item);
       } else {
         officeLine.push(item);
       }
     });
   });
+  // 庶務待辦：預設歸辦公室，有 cat=admin 的歸非辦公室
   data.todos.filter(t => !t.done && (!t.dueDate || t.dueDate <= todayStr)).forEach(t => {
-    choreLine.push({ name: t.name || '（未命名待辦）', done: false });
+    const item = { name: t.name || '（未命名待辦）', done: false };
+    if (t.cat === 'admin') adminLine.push(item);
+    else officeLine.push(item);
   });
 
   let html = '';
@@ -860,20 +860,10 @@ function renderTodayBanner() {
   });
   html += '</div></div>';
 
-  html += '<div class="today-divider"></div>';
-
-  // 庶務
-  html += '<div class="today-section"><div class="today-section-label">庶務</div><div class="today-tasks-list">';
-  if (choreLine.length === 0) html += '<span class="today-none">今天沒有庶務</span>';
-  else choreLine.forEach(t => {
-    html += `<div class="today-task-chip ${t.done?'completed':''}">${esc(t.name)}</div>`;
-  });
-  html += '</div></div>';
-
   document.getElementById('today-content').innerHTML = html;
 
   // Tab badge
-  const total = mainLine.length + sideLine.filter(t=>!t.done).length + choreLine.filter(t=>!t.done).length;
+  const total = mainLine.length + officeLine.filter(t=>!t.done).length + adminLine.filter(t=>!t.done).length;
   const tabBtn = document.querySelector('.tab[data-tab="tasks"]');
   tabBtn.innerHTML = total > 0 ? `📋 任務管理 <span class="badge">${total}</span>` : '📋 任務管理';
 }
