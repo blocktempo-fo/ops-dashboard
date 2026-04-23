@@ -1225,11 +1225,12 @@ function renderCalendar() {
       if(!occMap[key])occMap[key]=[];
       const isDeadline = key === t.deadline;
       const overdue = dl < today && isDeadline;
+      const rTag = t.isR ? '(R)' : '';
       // Avoid duplicates if start=deadline
       if(key === toDateStr(showFrom) && key === t.deadline) {
-        occMap[key].push({ id:'m'+t.id, name:t.name||'（主要任務）', freq:'main', type: overdue?'overdue':'main', done:false });
+        occMap[key].push({ id:'m'+t.id, name:(t.name||'（主要任務）')+rTag, freq:'main', type: overdue?'overdue':'main', done:false });
       } else {
-        occMap[key].push({ id:'m'+t.id, name:t.name||'（主要任務）', freq:'main', type: isDeadline?(overdue?'overdue':'main'):'main-start', done:false });
+        occMap[key].push({ id:'m'+t.id, name:(t.name||'（主要任務）')+rTag, freq:'main', type: isDeadline?(overdue?'overdue':'main'):'main-start', done:false });
       }
     });
   });
@@ -1350,7 +1351,8 @@ function showDayPopup(dateStr) {
     if(showDates.includes(dateStr)) {
       const isDeadline = dateStr === t.deadline;
       const overdue = dl < today && isDeadline;
-      items.push({ name: t.name, tag: isDeadline ? (overdue ? '⏰ 截止' : '截止日') : '開始日', tagBg: overdue ? '#FEE2E2' : '#DBEAFE', tagColor: overdue ? '#DC2626' : '#1E40AF', dotColor: overdue ? '#DC2626' : '#3B82F6', done: false });
+      const rTag = t.isR ? '(R)' : '';
+      items.push({ name: t.name + rTag, tag: isDeadline ? (overdue ? '⏰ 截止' : '截止日') : '開始日', tagBg: overdue ? '#FEE2E2' : '#DBEAFE', tagColor: overdue ? '#DC2626' : '#1E40AF', dotColor: overdue ? '#DC2626' : '#3B82F6', done: false });
     }
   });
   data.todos.forEach(t => {
@@ -1595,43 +1597,68 @@ function renderProgressReport() {
   const todayStr = toDateStr(today);
   const dateLabel = formatDateFull(today);
 
-  // Collect tasks with result or resultLink filled in
-  const items = [];
+  // Collect: active tasks with content, or completed today
+  const activeItems = [];
+  const doneItems = [];
   (data.mainTasks||[]).forEach(t => {
-    // 已完成且不是今天完成的 → 不顯示在進度報告
     if(t.done && t.doneDate !== todayStr) return;
-    if(!t.result && !t.nextAction) return;
-    const dl = t.deadline ? formatDateShort(parseDate(t.deadline)) : '';
-    items.push({ name: t.name, deadline: dl, result: t.result||'', nextAction: t.nextAction||'', done: t.done });
+    if(!t.result && !t.nextAction && !t.done) return;
+    const dl = t.deadline ? formatDateShort(parseDate(t.deadline)) + (t.isR ? '(R)' : '') : '';
+    const item = { name: t.name, deadline: dl, result: t.result||'', nextAction: t.nextAction||'', done: t.done };
+    if(t.done) doneItems.push(item); else activeItems.push(item);
   });
 
-  if(items.length === 0) {
+  if(activeItems.length === 0 && doneItems.length === 0) {
     container.style.display = 'none';
     return;
   }
   container.style.display = 'block';
 
-  // Build plain text report for copying
-  let reportLines = [`📋 工作進度報告 — ${dateLabel}`, ''];
-  items.forEach(t => {
-    const status = t.done ? '✅ 已完成' : '🔄 進行中';
-    reportLines.push(`${status}｜${t.name}${t.deadline ? '（截止 '+t.deadline+'）' : ''}`);
-    if(t.result) reportLines.push(`  ${t.result}`);
-    if(!t.done && t.nextAction) reportLines.push(`  ▸ 下一步：${t.nextAction}`);
+  // Build plain text report for Slack
+  const dow = ['日','一','二','三','四','五','六'];
+  const slackDate = `${today.getMonth()+1}/${today.getDate()}（${dow[today.getDay()]}）`;
+  let reportLines = [`工作進度 ${slackDate}`, ''];
+
+  if(activeItems.length > 0) {
+    reportLines.push('【進行中】');
+    activeItems.forEach(t => {
+      reportLines.push(`- ${t.name}${t.deadline ? '（截止 '+t.deadline+'）' : ''}`);
+      if(t.result) reportLines.push(`  > ${t.result}`);
+      if(t.nextAction) reportLines.push(`  > 下一步：${t.nextAction}`);
+    });
     reportLines.push('');
-  });
+  }
+  if(doneItems.length > 0) {
+    reportLines.push('【已完成】');
+    doneItems.forEach(t => {
+      reportLines.push(`- ${t.name}`);
+      if(t.result) reportLines.push(`  > ${t.result}`);
+    });
+    reportLines.push('');
+  }
   const reportText = reportLines.join('\n').trim();
 
   // Build visual HTML
   let bodyHtml = '';
-  items.forEach(t => {
-    const status = t.doneToday ? '<span style="color:var(--success);font-weight:700;">✅ 已完成</span>' : '<span style="color:var(--accent);font-weight:700;">🔄 進行中</span>';
-    bodyHtml += `<div style="margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(216,232,240,0.4);">
-      <div style="font-size:12px;font-weight:700;">${status} ${esc(t.name)} ${t.deadline ? '<span style="font-size:10px;color:var(--text-secondary);">（截止 '+t.deadline+'）</span>' : ''}</div>
-      ${t.result ? '<div style="font-size:11px;margin-left:18px;margin-top:2px;">'+linkify(t.result)+'</div>' : ''}
-      ${(!t.done && t.nextAction) ? '<div style="font-size:11px;margin-left:18px;margin-top:1px;color:var(--accent-hover);">▸ 下一步：'+esc(t.nextAction)+'</div>' : ''}
-    </div>`;
-  });
+  if(activeItems.length > 0) {
+    bodyHtml += '<div style="font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">進行中</div>';
+    activeItems.forEach(t => {
+      bodyHtml += `<div style="margin-bottom:8px;padding-left:12px;border-left:3px solid var(--accent);">
+        <div style="font-size:12px;font-weight:700;">${esc(t.name)} <span style="font-size:10px;color:var(--text-secondary);font-weight:500;">${t.deadline ? '截止 '+t.deadline : ''}</span></div>
+        ${t.result ? '<div style="font-size:11px;margin-top:2px;color:var(--text);">'+linkify(t.result)+'</div>' : ''}
+        ${t.nextAction ? '<div style="font-size:11px;margin-top:1px;color:var(--accent-hover);">下一步：'+esc(t.nextAction)+'</div>' : ''}
+      </div>`;
+    });
+  }
+  if(doneItems.length > 0) {
+    bodyHtml += '<div style="font-size:11px;font-weight:700;color:var(--success);margin:8px 0 6px;">已完成</div>';
+    doneItems.forEach(t => {
+      bodyHtml += `<div style="margin-bottom:6px;padding-left:12px;border-left:3px solid var(--success);opacity:0.8;">
+        <div style="font-size:12px;font-weight:700;text-decoration:line-through;">${esc(t.name)}</div>
+        ${t.result ? '<div style="font-size:11px;margin-top:2px;">'+linkify(t.result)+'</div>' : ''}
+      </div>`;
+    });
+  }
 
   container.innerHTML = `<div class="progress-report">
     <div class="progress-report-header">
