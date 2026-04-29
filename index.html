@@ -488,9 +488,7 @@ function loadData() {
       if (!data.completions) data.completions = {};
       if (!data.mainTasks) data.mainTasks = [];
       if (!data.nextMid) data.nextMid = 1;
-      if (!data.deletedDefaults) data.deletedDefaults = [];
-      // Auto-supplement missing default tasks
-      supplementDefaults();
+      // 不再自動補全 — 使用者刪掉/改空白都尊重
       return;
     } catch(e) {}
   }
@@ -501,41 +499,14 @@ function loadData() {
       data = JSON.parse(raw);
       data.overrides = {}; data.completions = {};
       data.mainTasks = []; data.nextMid = 1;
-      data.deletedDefaults = [];
       data.todos.forEach(t => { if (!t.dueDate) t.dueDate = t.createdDate || toDateStr(new Date()); });
-      supplementDefaults();
       saveData(); return;
     } catch(e) {}
   }
-  // Fresh
-  data = { tasks: [], todos: [], mainTasks: [], overrides: {}, completions: {}, nextId: 1, nextTid: 1, nextMid: 1, deletedDefaults: [] };
+  // Fresh install — 第一次用，種入預設例行任務當範例
+  data = { tasks: [], todos: [], mainTasks: [], overrides: {}, completions: {}, nextId: 1, nextTid: 1, nextMid: 1 };
   DEFAULT_TASKS.forEach(t => data.tasks.push({ id: data.nextId++, ...t }));
   saveData();
-}
-
-function supplementDefaults() {
-  let changed = false;
-  if (!data.deletedDefaults) data.deletedDefaults = [];
-  // Add missing tasks AND fill in empty fields on existing tasks
-  DEFAULT_TASKS.forEach(dt => {
-    const dKey = dt.name + '|' + dt.freq;
-    if (data.deletedDefaults.includes(dKey)) return; // 使用者已刪除，不再補回
-    const match = data.tasks.find(t => t.name === dt.name && t.freq === dt.freq);
-    if (!match) {
-      // Task missing entirely — add it
-      data.tasks.push({ id: data.nextId++, ...dt });
-      changed = true;
-    } else {
-      // Task exists — fill in any blank fields from default
-      ['how','note','link','owner','dom','start','cat'].forEach(field => {
-        if (!match[field] && dt[field]) {
-          match[field] = dt[field];
-          changed = true;
-        }
-      });
-    }
-  });
-  if (changed) saveData();
 }
 
 function resetData() {
@@ -968,16 +939,6 @@ function markDone(id) {
 
 function deleteTask(id) {
   if(!confirm('確定要刪除這個任務嗎？'))return;
-  const t = data.tasks.find(x=>x.id===id);
-  if(t) {
-    // 若為預設任務，記入 deletedDefaults 避免下次自動補回
-    const isDefault = DEFAULT_TASKS.some(d => d.name===t.name && d.freq===t.freq);
-    if(isDefault) {
-      if(!data.deletedDefaults) data.deletedDefaults = [];
-      const dKey = t.name + '|' + t.freq;
-      if(!data.deletedDefaults.includes(dKey)) data.deletedDefaults.push(dKey);
-    }
-  }
   data.tasks=data.tasks.filter(t=>t.id!==id); saveData(); renderAll();
 }
 
