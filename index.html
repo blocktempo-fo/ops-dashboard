@@ -308,6 +308,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); font
 <div class="header"><div class="header-inner">
   <h1><span style="font-size:26px">🐾</span> 營運任務管理 Dashboard
     <button onclick="resetData()" style="font-size:11px;font-weight:600;font-family:var(--font);background:rgba(107,181,224,0.1);border:1px solid var(--border);border-radius:8px;padding:4px 10px;cursor:pointer;color:var(--text-secondary);margin-left:12px;" title="重置為預設資料">🔄 重置</button>
+    <button onclick="restoreMissingDefaults()" style="font-size:11px;font-weight:600;font-family:var(--font);background:rgba(232,168,76,0.12);border:1px solid var(--warn);border-radius:8px;padding:4px 10px;cursor:pointer;color:var(--warn);margin-left:6px;" title="補回不見的預設任務（不影響現有任務）">🔧 補回預設</button>
     <button onclick="exportData()" style="font-size:11px;font-weight:600;font-family:var(--font);background:rgba(107,201,160,0.1);border:1px solid var(--success);border-radius:8px;padding:4px 10px;cursor:pointer;color:var(--success);margin-left:6px;" title="匯出資料為 JSON 檔案">📤 匯出</button>
     <button onclick="document.getElementById('import-file').click()" style="font-size:11px;font-weight:600;font-family:var(--font);background:rgba(107,181,224,0.1);border:1px solid var(--accent);border-radius:8px;padding:4px 10px;cursor:pointer;color:var(--accent);margin-left:6px;" title="從 JSON 檔案匯入資料">📥 匯入</button>
     <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(this)">
@@ -521,6 +522,21 @@ function resetData() {
 }
 
 function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+function restoreMissingDefaults() {
+  // 只補回 DEFAULT_TASKS 中目前不存在於 data.tasks 的（依名稱+頻率比對）
+  const existing = new Set(data.tasks.map(t => (t.name||'') + '|' + (t.freq||'')));
+  const missing = DEFAULT_TASKS.filter(dt => !existing.has(dt.name + '|' + dt.freq));
+  if(missing.length === 0) {
+    alert('沒有缺失的預設任務，目前都齊全。');
+    return;
+  }
+  if(!confirm(`將補回 ${missing.length} 個預設任務（不影響現有任務）。\n\n` + missing.map(t => '• ' + t.name).join('\n'))) return;
+  missing.forEach(dt => data.tasks.push({ id: data.nextId++, ...dt }));
+  saveData();
+  renderAll();
+  alert(`已補回 ${missing.length} 個任務。`);
+}
 
 function exportData() {
   const json = JSON.stringify(data, null, 2);
