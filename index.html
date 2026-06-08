@@ -307,7 +307,8 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); font
 
 <div class="header"><div class="header-inner">
   <h1><span style="font-size:26px">🐾</span> 營運任務管理 Dashboard
-    <button onclick="resetData()" style="font-size:11px;font-weight:600;font-family:var(--font);background:rgba(107,181,224,0.1);border:1px solid var(--border);border-radius:8px;padding:4px 10px;cursor:pointer;color:var(--text-secondary);margin-left:12px;" title="重置為預設資料">🔄 重置</button>
+    <span id="cloud-status" style="font-size:11px;font-weight:600;font-family:var(--font);background:rgba(255,255,255,0.6);border:1px solid var(--border);border-radius:8px;padding:4px 10px;color:var(--text-secondary);margin-left:12px;" title="雲端同步狀態">☁️ 同步中</span>
+    <button onclick="resetData()" style="font-size:11px;font-weight:600;font-family:var(--font);background:rgba(107,181,224,0.1);border:1px solid var(--border);border-radius:8px;padding:4px 10px;cursor:pointer;color:var(--text-secondary);margin-left:6px;" title="重置為預設資料">🔄 重置</button>
     <button onclick="restoreMissingDefaults()" style="font-size:11px;font-weight:600;font-family:var(--font);background:rgba(232,168,76,0.12);border:1px solid var(--warn);border-radius:8px;padding:4px 10px;cursor:pointer;color:var(--warn);margin-left:6px;" title="補回不見的預設任務（不影響現有任務）">🔧 補回預設</button>
     <button onclick="exportData()" style="font-size:11px;font-weight:600;font-family:var(--font);background:rgba(107,201,160,0.1);border:1px solid var(--success);border-radius:8px;padding:4px 10px;cursor:pointer;color:var(--success);margin-left:6px;" title="匯出資料為 JSON 檔案">📤 匯出</button>
     <button onclick="document.getElementById('import-file').click()" style="font-size:11px;font-weight:600;font-family:var(--font);background:rgba(107,181,224,0.1);border:1px solid var(--accent);border-radius:8px;padding:4px 10px;cursor:pointer;color:var(--accent);margin-left:6px;" title="從 JSON 檔案匯入資料">📥 匯入</button>
@@ -419,6 +420,18 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); font
 const STORAGE_KEY = 'ops-tasks-v3';
 const NOTION_BASE = 'https://www.notion.so/blocktempo/';
 
+// ═══════════════════════════════════════
+// 雲端同步設定（JSONBin）
+// ═══════════════════════════════════════
+const CLOUD_API_KEY = '$2a$10$EmqAyLRWb3kL0UcjKDFtlOQYeXXG9rw6rlyckBcTgk3xXfL5g6AHu';
+const CLOUD_BIN_ID = '6a26a3b2da38895dfe994420';
+const CLOUD_URL = 'https://api.jsonbin.io/v3/b/' + CLOUD_BIN_ID;
+const CLOUD_POLL_MS = 30000;
+const CLOUD_PUSH_DEBOUNCE_MS = 2000;
+let cloudPushTimer = null;
+let cloudPollTimer = null;
+let cloudEnabled = true;
+
 const FREQ_LABELS = { daily:'每天', every2days:'每兩天', weekly:'每週', monthly:'每月', bimonthly:'隔月', quarterly:'每季', yearly:'每年' };
 const DOW_LABELS = ['週日','週一','週二','週三','週四','週五','週六'];
 const FREQ_COLORS = {
@@ -521,7 +534,100 @@ function resetData() {
   renderAll();
 }
 
-function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+function saveData() {
+  data.lastModified = Date.now();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  scheduleCloudPush();
+}
+
+// ═══════════════════════════════════════
+// Cloud Sync (JSONBin)
+// ═══════════════════════════════════════
+function setCloudStatus(status) {
+  const el = document.getElementById('cloud-status');
+  if(!el) return;
+  if(status === 'syncing') { el.textContent = '🔄 同步中'; el.style.color = 'var(--accent)'; }
+  else if(status === 'error') { el.textContent = '⚠️ 離線'; el.style.color = 'var(--danger)'; }
+  else if(status === 'ok') { el.textContent = '☁️ 已同步'; el.style.color = 'var(--success)'; }
+  else if(status === 'disabled') { el.textContent = '💾 本機'; el.style.color = 'var(--text-secondary)'; }
+}
+
+async function cloudPull() {
+  if(!cloudEnabled) return null;
+  try {
+    setCloudStatus('syncing');
+    const res = await fetch(CLOUD_URL + '/latest', {
+      headers: { 'X-Master-Key': CLOUD_API_KEY }
+    });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    setCloudStatus('ok');
+    return json.record || null;
+  } catch(e) {
+    console.warn('cloudPull failed:', e.message);
+    setCloudStatus('error');
+    return null;
+  }
+}
+
+async function cloudPush(payload) {
+  if(!cloudEnabled) return;
+  try {
+    setCloudStatus('syncing');
+    const res = await fetch(CLOUD_URL, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': CLOUD_API_KEY
+      },
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    setCloudStatus('ok');
+  } catch(e) {
+    console.warn('cloudPush failed:', e.message);
+    setCloudStatus('error');
+  }
+}
+
+function scheduleCloudPush() {
+  if(cloudPushTimer) clearTimeout(cloudPushTimer);
+  cloudPushTimer = setTimeout(() => cloudPush(data), CLOUD_PUSH_DEBOUNCE_MS);
+}
+
+async function cloudCheckUpdate() {
+  const remote = await cloudPull();
+  if(!remote) return;
+  const localTs = data.lastModified || 0;
+  const remoteTs = remote.lastModified || 0;
+  if(remoteTs > localTs) {
+    data = remote;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    renderAll();
+    console.log('已從雲端載入較新的資料');
+  }
+}
+
+async function cloudInit() {
+  // 1) 先拉雲端
+  const remote = await cloudPull();
+  const hasRemote = remote && remote.lastModified;
+  const hasLocal = data.lastModified;
+
+  if(hasRemote && (!hasLocal || remote.lastModified > data.lastModified)) {
+    // 雲端較新 → 用雲端覆蓋本機
+    data = remote;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    renderAll();
+  } else if(!hasRemote || (hasLocal && data.lastModified > (remote.lastModified || 0))) {
+    // 本機較新 or 雲端是空的 → 推上去
+    cloudPush(data);
+  }
+
+  // 2) 啟動輪詢
+  if(cloudPollTimer) clearInterval(cloudPollTimer);
+  cloudPollTimer = setInterval(cloudCheckUpdate, CLOUD_POLL_MS);
+}
 
 function restoreMissingDefaults() {
   // 只補回 DEFAULT_TASKS 中目前不存在於 data.tasks 的（依名稱+頻率比對）
@@ -1862,6 +1968,7 @@ loadData();
 carryOverTodos();
 initCal();
 renderAll();
+cloudInit(); // 啟動雲端同步
 </script>
 </body>
 </html>
