@@ -307,7 +307,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); font
 
 <div class="header"><div class="header-inner">
   <h1><span style="font-size:26px">🐾</span> 營運任務管理 Dashboard
-    <span id="cloud-status" style="font-size:11px;font-weight:600;font-family:var(--font);background:rgba(255,255,255,0.6);border:1px solid var(--border);border-radius:8px;padding:4px 10px;color:var(--text-secondary);margin-left:12px;" title="雲端同步狀態">☁️ 同步中</span>
+    <span id="cloud-status" onclick="manualSync()" style="font-size:11px;font-weight:600;font-family:var(--font);background:rgba(255,255,255,0.6);border:1px solid var(--border);border-radius:8px;padding:4px 10px;color:var(--text-secondary);margin-left:12px;cursor:pointer;" title="點擊立即從雲端拉取最新資料">☁️ 同步中</span>
     <button onclick="resetData()" style="font-size:11px;font-weight:600;font-family:var(--font);background:rgba(107,181,224,0.1);border:1px solid var(--border);border-radius:8px;padding:4px 10px;cursor:pointer;color:var(--text-secondary);margin-left:6px;" title="重置為預設資料">🔄 重置</button>
     <button onclick="restoreMissingDefaults()" style="font-size:11px;font-weight:600;font-family:var(--font);background:rgba(232,168,76,0.12);border:1px solid var(--warn);border-radius:8px;padding:4px 10px;cursor:pointer;color:var(--warn);margin-left:6px;" title="補回不見的預設任務（不影響現有任務）">🔧 補回預設</button>
     <button onclick="exportData()" style="font-size:11px;font-weight:600;font-family:var(--font);background:rgba(107,201,160,0.1);border:1px solid var(--success);border-radius:8px;padding:4px 10px;cursor:pointer;color:var(--success);margin-left:6px;" title="匯出資料為 JSON 檔案">📤 匯出</button>
@@ -609,24 +609,22 @@ async function cloudCheckUpdate() {
 }
 
 async function cloudInit() {
-  // 1) 先拉雲端
+  // 開頁時拉一次雲端，不再持續輪詢（節省 API 額度）
   const remote = await cloudPull();
   const hasRemote = remote && remote.lastModified;
   const hasLocal = data.lastModified;
 
   if(hasRemote && (!hasLocal || remote.lastModified > data.lastModified)) {
-    // 雲端較新 → 用雲端覆蓋本機
     data = remote;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     renderAll();
   } else if(!hasRemote || (hasLocal && data.lastModified > (remote.lastModified || 0))) {
-    // 本機較新 or 雲端是空的 → 推上去
     cloudPush(data);
   }
+}
 
-  // 2) 啟動輪詢
-  if(cloudPollTimer) clearInterval(cloudPollTimer);
-  cloudPollTimer = setInterval(cloudCheckUpdate, CLOUD_POLL_MS);
+async function manualSync() {
+  await cloudCheckUpdate();
 }
 
 function restoreMissingDefaults() {
